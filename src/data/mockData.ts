@@ -103,11 +103,18 @@ export const calendarEvents = [
 ];
 
 export const roadmapItems = [
-  { id: '1', skill: 'Machine Learning', milestone: 'Complete Andrew Ng Course', targetDate: '2026-12-01', progress: 60, status: 'on-track' },
-  { id: '2', skill: 'Machine Learning', milestone: 'Build 3 ML Projects', targetDate: '2027-02-01', progress: 33, status: 'on-track' },
-  { id: '3', skill: 'System Design', milestone: 'Read Designing Data-Intensive Apps', targetDate: '2026-11-15', progress: 75, status: 'on-track' },
-  { id: '4', skill: 'System Design', milestone: 'Complete Grokking System Design', targetDate: '2026-12-31', progress: 45, status: 'delayed' },
-  { id: '5', skill: 'Rust', milestone: 'Complete Rust Book', targetDate: '2027-03-01', progress: 20, status: 'on-track' },
+  { id: '1', skill: 'Machine Learning', milestone: 'Complete Andrew Ng Course', targetDate: '2026-12-01', startDate: '2026-09-01', progress: 60, status: 'on-track', dependsOn: null },
+  { id: '2', skill: 'Machine Learning', milestone: 'Build 3 ML Projects', targetDate: '2027-02-01', startDate: '2026-12-01', progress: 33, status: 'on-track', dependsOn: '1' },
+  { id: '3', skill: 'System Design', milestone: 'Read DDIA', targetDate: '2026-11-15', startDate: '2026-10-01', progress: 75, status: 'on-track', dependsOn: null },
+  { id: '4', skill: 'System Design', milestone: 'Grokking System Design', targetDate: '2026-12-31', startDate: '2026-11-15', progress: 45, status: 'delayed', dependsOn: '3' },
+  { id: '5', skill: 'Rust', milestone: 'Complete Rust Book', targetDate: '2027-03-01', startDate: '2026-10-15', progress: 20, status: 'on-track', dependsOn: null },
+  { id: '6', skill: 'Machine Learning', milestone: 'Deploy ML Model to Production', targetDate: '2027-04-01', startDate: '2027-02-01', progress: 0, status: 'upcoming', dependsOn: '2' },
+];
+
+export const roadmaps = [
+  { id: '1', name: 'ML Engineer Path', duration: '6-month', skills: ['Machine Learning'], startDate: '2026-09-01', endDate: '2027-03-01' },
+  { id: '2', name: 'System Design Mastery', duration: '3-month', skills: ['System Design'], startDate: '2026-10-01', endDate: '2026-12-31' },
+  { id: '3', name: 'Learn Rust', duration: '6-month', skills: ['Rust'], startDate: '2026-10-15', endDate: '2027-04-15' },
 ];
 
 export const qualifications = [

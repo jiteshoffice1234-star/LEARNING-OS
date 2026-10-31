@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { 
   LayoutDashboard, BookOpen, Timer, Calendar, Brain, 
   BarChart3, Settings, Award, FileText, Target,
-  ChevronLeft, ChevronRight, Search, Bell, Plus
+  ChevronLeft, ChevronRight, Search, Bell, Plus,
+  RotateCcw, GraduationCap, Map, User, Database
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -16,10 +17,16 @@ const navItems = [
   { id: 'study', label: 'Study Center', icon: BookOpen },
   { id: 'timer', label: 'Study Timer', icon: Timer },
   { id: 'calendar', label: 'Calendar', icon: Calendar },
+  { id: 'revisions', label: 'Revisions', icon: RotateCcw },
+  { id: 'tests', label: 'Tests', icon: GraduationCap },
   { id: 'skills', label: 'Skills', icon: Brain },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'roadmap', label: 'Roadmap', icon: Map },
+  { id: 'qualifications', label: 'Qualifications', icon: GraduationCap },
   { id: 'vault', label: 'Vault', icon: Award },
   { id: 'notes', label: 'Notes', icon: FileText },
+  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'profile', label: 'Profile', icon: User },
+  { id: 'backup', label: 'Backup', icon: Database },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -154,6 +161,15 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true });
+                window.dispatchEvent(event);
+              }}
+              className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-elevated/50 border border-border/50 text-xs text-muted hover:text-text hover:border-primary/30 transition-colors"
+            >
+              <span>⌘K</span>
+            </button>
             <button className="p-2 rounded-lg hover:bg-elevated text-muted hover:text-text transition-colors relative">
               <Bell className="w-4 h-4" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
