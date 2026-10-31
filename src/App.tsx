@@ -17,21 +17,25 @@ import Roadmap from './pages/Roadmap';
 import Qualifications from './pages/Qualifications';
 import Profile from './pages/Profile';
 import BackupCenter from './pages/BackupCenter';
+import InboxPage from './pages/Inbox';
+import Tasks from './pages/Tasks';
+import Projects from './pages/Projects';
+import Flashcards from './pages/Flashcards';
+import Knowledge from './pages/Knowledge';
+import Goals from './pages/Goals';
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false); // Set to true for first-time onboarding demo
+  const [showWelcome, setShowWelcome] = useState(false);
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + K = Command Palette
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setCommandPaletteOpen(prev => !prev);
       }
-      // Escape = Close palette
       if (e.key === 'Escape') {
         setCommandPaletteOpen(false);
       }
@@ -46,21 +50,34 @@ export default function App() {
 
   const renderPage = () => {
     switch (currentPage) {
+      // Home
       case 'dashboard': return <Dashboard />;
+      case 'inbox': return <InboxPage />;
+      // Learn
       case 'study': return <StudyCenter />;
       case 'timer': return <StudyTimer />;
       case 'calendar': return <CalendarPage />;
-      case 'skills': return <Skills />;
-      case 'analytics': return <Analytics />;
-      case 'vault': return <Vault />;
-      case 'notes': return <Notes />;
-      case 'settings': return <SettingsPage />;
       case 'revisions': return <RevisionManager />;
       case 'tests': return <TestsCenter />;
+      case 'flashcards': return <Flashcards />;
+      // Build
+      case 'tasks': return <Tasks />;
+      case 'projects': return <Projects />;
+      // Plan
       case 'roadmap': return <Roadmap />;
+      case 'goals': return <Goals />;
+      // Remember
+      case 'knowledge': return <Knowledge />;
+      case 'skills': return <Skills />;
+      case 'vault': return <Vault />;
+      case 'notes': return <Notes />;
+      // Measure
+      case 'analytics': return <Analytics />;
       case 'qualifications': return <Qualifications />;
+      // System
       case 'profile': return <Profile />;
       case 'backup': return <BackupCenter />;
+      case 'settings': return <SettingsPage />;
       default: return <Dashboard />;
     }
   };

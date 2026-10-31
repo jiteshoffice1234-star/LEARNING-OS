@@ -2,85 +2,60 @@
 
 **Version:** 1.0.0-web  
 **Last Updated:** 31 October 2026  
-**Build Status:** ✅ Passing
+**Build Status:** ✅ Passing (801 KB JS, 41 KB CSS)
 
 ---
 
-## ✅ Completed Features
+## ✅ Completed Screens (24 total)
 
-### Phase 0: Foundation
-- [x] Project initialization (React + Vite + Tailwind CSS)
-- [x] Theme system (dark/light with violet accent palette)
-- [x] Responsive navigation (desktop sidebar + mobile bottom nav)
-- [x] Design tokens and component library
-- [x] Mock data infrastructure
+### Module 1 — HOME
+- [x] Dashboard (customizable widgets, stats, charts, heatmap)
+- [x] Inbox / Quick Capture (text, links, images, documents, voice)
+- [x] Capture workflow (New → Reviewing → Organized → Archived)
+- [x] Convert captures to Tasks, Notes, Goals
 
-### Phase 1: Study Engine
-- [x] Dashboard with stats, charts, heatmap
+### Module 2 — LEARN
 - [x] Study Center (Course → Subject → Chapter hierarchy)
 - [x] Study Timer (persistent timer with start/pause/resume/stop)
-- [x] Calendar (month view with events and streaks)
-- [x] Session history tracking
-
-### Phase 2: Academic Features
 - [x] Revision Manager (cycles, due dates, postponement, completion)
 - [x] Tests & Examinations Center (scores, accuracy, mistake tracking)
-- [x] Test detail modal with breakdown
-- [x] Performance trend charts
+- [x] Flashcards (decks, cards, study mode, spaced repetition)
 
-### Phase 3: Skills & Roadmaps
-- [x] Skills Management (proficiency levels, categories)
-- [x] Skill detail view with roadmap
-- [x] Learning Roadmap (Gantt chart + vertical timeline)
-- [x] Milestone tracking with dependencies
-- [x] Duration selectors (3m/6m/1y/5y)
+### Module 3 — BUILD
+- [x] Tasks (todo/in-progress/done, priorities, due dates, tags)
+- [x] Projects (active/completed/paused, progress, skills used)
 
-### Phase 4: Credentials & Documents
-- [x] Qualifications (academic + professional)
+### Module 4 — PLAN
+- [x] Calendar (month view with events, streaks, heatmap)
+- [x] Learning Roadmap (Gantt chart + vertical timeline, milestones)
+- [x] Goals (learning/skill/career/personal, milestones, progress)
+
+### Module 5 — REMEMBER
+- [x] Knowledge Base (concepts, facts, resources, insights, tags)
+- [x] Skills (proficiency levels, categories, roadmap integration)
 - [x] Achievement Vault (certificates, filtering, search)
-- [x] Document type tracking
-- [x] Verification status badges
-
-### Phase 5: Productivity
 - [x] Notes & Library (tagged notes, bookmarks, search)
-- [x] Command Palette (⌘K with keyboard navigation)
-- [x] Global search integration
-- [x] Profile management (editable fields)
 
-### Phase 6: Data Management
-- [x] Backup Center (backup/restore UI, encryption toggle)
-- [x] Storage overview with breakdown
-- [x] Backup history list
-- [x] Auto-backup settings
-- [x] Export options (JSON, CSV, ZIP)
+### Module 6 — MEASURE
+- [x] Analytics (multi-chart insights, performance trends)
+- [x] Qualifications (academic + professional, status tracking)
 
-### Phase 7: Polish
-- [x] Welcome/Onboarding screen (6-step flow)
-- [x] Settings page (appearance, notifications, security)
-- [x] Analytics page (multi-chart insights)
-- [x] Keyboard shortcuts (⌘K for command palette)
-- [x] Mobile-responsive bottom navigation
-- [x] Glass morphism cards with consistent design
+### Module 7 — SYSTEM
+- [x] Profile (editable fields, stats, onboarding data)
+- [x] Backup Center (backup/restore UI, encryption, history)
+- [x] Settings (appearance, notifications, security, data)
 
----
-
-## 🚧 In Progress
-- [ ] Real database integration (SQLite/Drift in Flutter version)
-- [ ] File upload with SHA-256 verification
-- [ ] PDF/image preview viewer
-- [ ] Notification scheduling
-- [ ] Data encryption implementation
-
----
-
-## 📋 Pending (Flutter Native Features)
-- [ ] Native Android/Windows builds
-- [ ] Biometric app lock
-- [ ] Background timer persistence
-- [ ] Native file picker integration
-- [ ] ZIP backup with actual file packaging
-- [ ] Database migrations
-- [ ] Integration tests
+### Global Features
+- [x] Welcome/Onboarding (6-step flow with progress indicator)
+- [x] Command Palette (⌘K with keyboard navigation, 20+ commands)
+- [x] 7-Section Navigation (Home, Learn, Build, Plan, Remember, Measure, System)
+- [x] Desktop sidebar with collapsible sections
+- [x] Mobile bottom navigation (5 items: Home, Learn, Build, Plan, More)
+- [x] Responsive design (mobile + desktop)
+- [x] Dark theme with violet accent palette
+- [x] Glass morphism card design system
+- [x] Empty states for all modules
+- [x] Modal dialogs for create/edit flows
 
 ---
 
@@ -100,36 +75,63 @@
 | Warning | #E5AA55 | Caution states |
 | Danger | #E16F79 | Error states |
 
-### Typography
-- Font: Inter (300-800 weights)
-- Headings: Bold, tight tracking
-- Body: Regular, relaxed line-height
-- Mono: For timer display
+### Navigation Structure
+```
+Desktop Sidebar (7 sections):
+├── Home (Dashboard, Inbox)
+├── Learn (Study Center, Timer, Revisions, Tests, Flashcards)
+├── Build (Tasks, Projects)
+├── Plan (Calendar, Roadmap, Goals)
+├── Remember (Knowledge, Skills, Vault, Notes)
+├── Measure (Analytics, Qualifications)
+└── System (Profile, Backup, Settings)
+
+Mobile Bottom Nav (5 items):
+├── Home
+├── Learn
+├── Build
+├── Plan
+└── More (access to all sections)
+```
 
 ---
 
-## 📱 Screen Inventory (Web Version)
+## 📁 File Structure
 
-| # | Screen | Status |
-|---|--------|--------|
-| 1 | Welcome/Onboarding | ✅ Complete |
-| 2 | Dashboard | ✅ Complete |
-| 3 | Study Center | ✅ Complete |
-| 4 | Study Timer | ✅ Complete |
-| 5 | Calendar | ✅ Complete |
-| 6 | Revision Manager | ✅ Complete |
-| 7 | Tests Center | ✅ Complete |
-| 8 | Skills Dashboard | ✅ Complete |
-| 9 | Learning Roadmap | ✅ Complete |
-| 10 | Qualifications | ✅ Complete |
-| 11 | Achievement Vault | ✅ Complete |
-| 12 | Notes & Library | ✅ Complete |
-| 13 | Analytics | ✅ Complete |
-| 14 | Profile | ✅ Complete |
-| 15 | Backup Center | ✅ Complete |
-| 16 | Settings | ✅ Complete |
-| 17 | Command Palette | ✅ Complete |
-| 18 | Global Search | ✅ Complete (via Command Palette) |
+```
+src/
+├── App.tsx                        # Root with routing
+├── main.tsx                       # Entry point
+├── index.css                      # Global styles + Tailwind
+├── components/
+│   ├── Layout.tsx                 # 7-section sidebar + top bar + mobile nav
+│   └── CommandPalette.tsx         # ⌘K search & navigation
+├── data/
+│   └── mockData.ts                # Mock data for all modules
+└── pages/
+    ├── Welcome.tsx                # 6-step onboarding
+    ├── Dashboard.tsx              # Overview with widgets
+    ├── Inbox.tsx                  # Quick Capture + Inbox
+    ├── StudyCenter.tsx            # Course/Subject/Chapter
+    ├── StudyTimer.tsx             # Persistent timer
+    ├── Calendar.tsx               # Month view + events
+    ├── RevisionManager.tsx        # Spaced repetition
+    ├── TestsCenter.tsx            # Test tracking
+    ├── Flashcards.tsx             # Decks + study mode
+    ├── Tasks.tsx                  # Task management
+    ├── Projects.tsx               # Project tracking
+    ├── Roadmap.tsx                # Gantt + timeline views
+    ├── Goals.tsx                  # Goal setting + milestones
+    ├── Knowledge.tsx              # Knowledge base
+    ├── Skills.tsx                 # Proficiency tracking
+    ├── Vault.tsx                  # Document management
+    ├── Notes.tsx                  # Notes & bookmarks
+    ├── Analytics.tsx              # Charts & insights
+    ├── Qualifications.tsx         # Academic/professional
+    ├── Profile.tsx                # User profile
+    ├── BackupCenter.tsx           # Backup/restore
+    └── Settings.tsx               # App configuration
+```
 
 ---
 
@@ -144,60 +146,51 @@
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture Notes
 
-```
-src/
-├── App.tsx                    # Root with routing
-├── main.tsx                   # Entry point
-├── index.css                  # Global styles + Tailwind
-├── components/
-│   ├── Layout.tsx             # Sidebar + top bar + mobile nav
-│   └── CommandPalette.tsx     # ⌘K search & navigation
-├── data/
-│   └── mockData.ts            # Mock data for all modules
-└── pages/
-    ├── Welcome.tsx            # 6-step onboarding
-    ├── Dashboard.tsx          # Overview with widgets
-    ├── StudyCenter.tsx        # Course/Subject/Chapter
-    ├── StudyTimer.tsx         # Persistent timer
-    ├── Calendar.tsx           # Month view + events
-    ├── RevisionManager.tsx    # Spaced repetition
-    ├── TestsCenter.tsx        # Test tracking
-    ├── Skills.tsx             # Proficiency tracking
-    ├── Roadmap.tsx            # Gantt + timeline views
-    ├── Qualifications.tsx     # Academic/professional
-    ├── Vault.tsx              # Document management
-    ├── Notes.tsx              # Notes & bookmarks
-    ├── Analytics.tsx          # Charts & insights
-    ├── Profile.tsx            # User profile
-    ├── BackupCenter.tsx       # Backup/restore
-    └── Settings.tsx           # App configuration
-```
+- **State Management:** React useState (ready for Riverpod migration in Flutter)
+- **Routing:** Switch-based (ready for go_router migration)
+- **Data Persistence:** Mock data (ready for SQLite/Drift migration)
+- **Design System:** Tailwind CSS with custom theme tokens
+- **Component Pattern:** Feature-first with shared Layout wrapper
+- **Responsive:** Mobile-first with desktop enhancements
 
 ---
 
-## 🧪 Test Results
+## 🧪 Build Results
 
 - Build: ✅ Passing
 - TypeScript: ✅ No errors
-- Bundle Size: 742 KB (JS) + 38 KB (CSS)
+- Bundle Size: 801 KB (JS) + 41 KB (CSS)
+- Modules: 2000 transformed
+- Build Time: 9.40s
 
 ---
 
-## 🎯 Next Actions
+## 🎯 Next Actions (Flutter Migration)
 
-1. Add real database persistence (IndexedDB for web)
-2. Implement file upload with drag-and-drop
-3. Add PDF/image preview modal
-4. Implement notification scheduling
-5. Add data export/import functionality
-6. Create Flutter native version with full offline support
+1. Port design system to Flutter widgets
+2. Implement SQLite + Drift database
+3. Implement Riverpod state management
+4. Implement go_router navigation
+5. Build native file picker integration
+6. Implement persistent timer with timestamps
+7. Add local notifications
+8. Implement ZIP backup/restore
+9. Add PDF/image viewer
+10. Write integration tests
 
 ---
 
-## 📝 Notes
+## 📝 Product Philosophy
 
-This web implementation serves as a high-fidelity prototype demonstrating all UI/UX patterns, navigation flows, and feature interactions planned for the full Flutter application. All visual designs, component patterns, and data models are production-ready for porting to Flutter/Dart.
+> LEARN WITH INTENTION. TRACK WITH PRECISION.
 
-The design follows the Linear + Raycast hybrid aesthetic with premium dark interface, violet accents, and professional information hierarchy as specified.
+- The user's device is the home of their data
+- Offline functionality is fundamental
+- Every important record should be searchable
+- Modules connect to each other
+- Users control their information
+- Data remains portable
+- Useful without customization
+- Advanced features don't complicate basics
