@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    
+    <!-- Background circle -->
+    <path
+        android:fillColor="#8170ED"
+        android:pathData="M60,60m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0" />
+    
+    <!-- Abstract "L" shape with connected nodes -->
+    <path
+        android:fillColor="#111318"
+        android:pathData="M40,35L40,85L80,85" 
+        android:strokeWidth="6"
+        android:strokeColor="#111318" />
+    
+    <!-- Connection nodes -->
+    <path
+        android:fillColor="#A99BFF"
+        android:pathData="M40,35m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+    <path
+        android:fillColor="#A99BFF"
+        android:pathData="M40,85m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+    <path
+        android:fillColor="#A99BFF"
+        android:pathData="M80,85m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+</vector>

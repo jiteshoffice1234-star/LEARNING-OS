@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- LEARNING OS Brand Colors -->
+    <color name="colorPrimary">#8170ED</color>
+    <color name="colorPrimaryDark">#111318</color>
+    <color name="colorAccent">#A99BFF</color>
+    <color name="colorBackground">#111318</color>
+    <color name="colorSurface">#191C24</color>
+    <color name="colorText">#E8E8EF</color>
+    <color name="colorMuted">#9295A3</color>
+    <color name="colorSuccess">#43B889</color>
+    <color name="colorWarning">#E5AA55</color>
+    <color name="colorDanger">#E16F79</color>
+</resources>
