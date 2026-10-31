@@ -72,52 +72,52 @@ export default function Tasks() {
   };
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2">
-            <CheckSquare className="w-6 h-6 text-primary" />
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <CheckSquare className="w-5 h-5 text-primary" />
             Tasks
           </h1>
-          <p className="text-sm text-muted mt-1">Manage your to-dos and action items</p>
+          <p className="text-xs text-muted">To-dos and action items</p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Add Task</span>
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Circle className="w-3 h-3 text-muted" />
-            <span className="text-xs text-muted">To Do</span>
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
+          <Circle className="w-3 h-3 text-muted" />
+          <div>
+            <p className="text-sm font-bold text-text">{stats.todo}</p>
+            <p className="text-[10px] text-muted">To Do</p>
           </div>
-          <p className="text-2xl font-bold text-text">{stats.todo}</p>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-3 h-3 rounded-full border-2 border-primary" />
-            <span className="text-xs text-muted">In Progress</span>
+        <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full border-2 border-primary" />
+          <div>
+            <p className="text-sm font-bold text-primary">{stats.inProgress}</p>
+            <p className="text-[10px] text-muted">Active</p>
           </div>
-          <p className="text-2xl font-bold text-primary">{stats.inProgress}</p>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircle2 className="w-3 h-3 text-success" />
-            <span className="text-xs text-muted">Done</span>
+        <div className="glass-card rounded-lg p-2.5 flex items-center gap-2">
+          <CheckCircle2 className="w-3 h-3 text-success" />
+          <div>
+            <p className="text-sm font-bold text-success">{stats.done}</p>
+            <p className="text-[10px] text-muted">Done</p>
           </div>
-          <p className="text-2xl font-bold text-success">{stats.done}</p>
         </div>
       </div>
 
       {/* Filter */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
         {(['all', 'todo', 'in-progress', 'done'] as const).map((f) => (
           <button
             key={f}
@@ -132,57 +132,45 @@ export default function Tasks() {
       </div>
 
       {/* Task List */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         {filtered.map((task) => {
           const priority = priorityConfig[task.priority];
           const isDone = task.status === 'done';
           return (
             <div
               key={task.id}
-              className="glass-card rounded-xl p-4 hover:border-primary/20 transition-all group"
+              className="glass-card rounded-lg p-2 hover:border-primary/20 transition-all group flex items-center gap-2"
             >
-              <div className="flex items-start gap-3">
-                {/* Checkbox */}
-                <button 
-                  onClick={() => toggleStatus(task.id)}
-                  className="mt-0.5 flex-shrink-0"
-                >
-                  {task.status === 'done' ? (
-                    <CheckCircle2 className="w-5 h-5 text-success" />
-                  ) : task.status === 'in-progress' ? (
-                    <div className="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-primary" />
-                    </div>
-                  ) : (
-                    <Circle className="w-5 h-5 text-muted hover:text-primary transition-colors" />
-                  )}
-                </button>
+              {/* Checkbox */}
+              <button 
+                onClick={() => toggleStatus(task.id)}
+                className="flex-shrink-0"
+              >
+                {task.status === 'done' ? (
+                  <CheckCircle2 className="w-4 h-4 text-success" />
+                ) : task.status === 'in-progress' ? (
+                  <div className="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                  </div>
+                ) : (
+                  <Circle className="w-4 h-4 text-muted hover:text-primary transition-colors" />
+                )}
+              </button>
 
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className={`text-sm font-medium ${isDone ? 'text-muted line-through' : 'text-text'}`}>
-                      {task.title}
-                    </h3>
-                    <div className={`w-1.5 h-1.5 rounded-full ${priority.bg.replace('/15', '')}`} style={{ backgroundColor: task.priority === 'high' ? '#E16F79' : task.priority === 'medium' ? '#E5AA55' : '#9295A3' }} />
-                  </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {task.dueDate && (
-                      <span className="text-[10px] text-muted flex items-center gap-1">
-                        <Calendar className="w-3 h-3" /> {task.dueDate}
-                      </span>
-                    )}
-                    {task.linkedTo && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
-                        {task.linkedTo}
-                      </span>
-                    )}
-                    {task.tags.slice(0, 2).map(tag => (
-                      <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-elevated/50 text-muted">
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
+              {/* Content */}
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                <h3 className={`text-xs font-medium truncate ${isDone ? 'text-muted line-through' : 'text-text'}`}>
+                  {task.title}
+                </h3>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {task.dueDate && (
+                    <span className="text-[10px] text-muted">{task.dueDate.slice(5)}</span>
+                  )}
+                  {task.linkedTo && (
+                    <span className="text-[9px] px-1 py-0.5 rounded bg-primary/10 text-primary">
+                      {task.linkedTo}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

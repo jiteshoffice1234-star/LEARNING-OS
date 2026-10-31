@@ -56,56 +56,43 @@ export default function RevisionManager() {
   };
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
-          <h1 className="text-2xl font-bold text-text">Revision Manager</h1>
-          <p className="text-sm text-muted mt-1">Spaced repetition for long-term retention</p>
+          <h1 className="text-xl font-bold text-text">Revision Manager</h1>
+          <p className="text-xs text-muted">Spaced repetition for retention</p>
         </div>
         <button 
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
         >
-          <Plus className="w-4 h-4" />
-          <span className="hidden sm:inline">New Revision</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">New</span>
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock className="w-4 h-4 text-primary" />
-            <span className="text-xs text-muted">Upcoming</span>
-          </div>
-          <p className="text-2xl font-bold text-text">{stats.upcoming}</p>
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <Clock className="w-3 h-3 text-primary" />
+          <span className="text-[11px] text-text font-medium">{stats.upcoming}</span>
+          <span className="text-[10px] text-muted">Upcoming</span>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <AlertTriangle className="w-4 h-4 text-danger" />
-            <span className="text-xs text-muted">Overdue</span>
-          </div>
-          <p className="text-2xl font-bold text-danger">{stats.overdue}</p>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <AlertTriangle className="w-3 h-3 text-danger" />
+          <span className="text-[11px] text-danger font-medium">{stats.overdue}</span>
+          <span className="text-[10px] text-muted">Overdue</span>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircle2 className="w-4 h-4 text-success" />
-            <span className="text-xs text-muted">Completed</span>
-          </div>
-          <p className="text-2xl font-bold text-success">{stats.completed}</p>
-        </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <RotateCcw className="w-4 h-4 text-accent" />
-            <span className="text-xs text-muted">Total Cycles</span>
-          </div>
-          <p className="text-2xl font-bold text-text">{stats.total}</p>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <CheckCircle2 className="w-3 h-3 text-success" />
+          <span className="text-[11px] text-success font-medium">{stats.completed}</span>
+          <span className="text-[10px] text-muted">Done</span>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
         {(['all', 'upcoming', 'overdue', 'completed'] as const).map((f) => (
           <button
             key={f}
@@ -120,33 +107,32 @@ export default function RevisionManager() {
       </div>
 
       {/* Revision List */}
-      <div className="space-y-3">
+      <div className="space-y-1">
         {filtered.map((revision) => (
           <div
             key={revision.id}
             onClick={() => setSelectedRevision(revision)}
-            className="glass-card rounded-xl p-4 cursor-pointer hover:border-primary/30 transition-all group"
+            className="glass-card rounded-lg p-2 cursor-pointer hover:border-primary/30 transition-all group flex items-center gap-2"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
               {/* Cycle Badge */}
-              <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center flex-shrink-0 ${
+              <div className={`w-8 h-8 rounded flex flex-col items-center justify-center flex-shrink-0 ${
                 revision.status === 'completed' ? 'bg-success/15' :
                 revision.status === 'overdue' ? 'bg-danger/15' :
                 revision.status === 'postponed' ? 'bg-warning/15' : 'bg-primary/15'
               }`}>
-                <span className={`text-xs font-bold ${
+                <span className={`text-[10px] font-bold ${
                   revision.status === 'completed' ? 'text-success' :
                   revision.status === 'overdue' ? 'text-danger' :
                   revision.status === 'postponed' ? 'text-warning' : 'text-primary'
                 }`}>R{revision.cycle}</span>
-                <span className="text-[9px] text-muted">cycle</span>
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-semibold text-text truncate">{revision.chapter}</h3>
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-xs font-medium text-text truncate">{revision.chapter}</h3>
+                  <span className={`text-[9px] px-1 py-0.5 rounded flex-shrink-0 ${
                     revision.status === 'completed' ? 'bg-success/15 text-success' :
                     revision.status === 'overdue' ? 'bg-danger/15 text-danger' :
                     revision.status === 'postponed' ? 'bg-warning/15 text-warning' : 'bg-primary/15 text-primary'
@@ -154,31 +140,22 @@ export default function RevisionManager() {
                     {revision.status}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-xs text-muted">
-                  <span className="flex items-center gap-1">
-                    <BookOpen className="w-3 h-3" /> {revision.subject}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" /> {revision.dueDate}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <RotateCcw className="w-3 h-3" /> {revision.interval}d interval
-                  </span>
+                <div className="flex items-center gap-2 text-[10px] text-muted mt-0.5">
+                  <span>{revision.subject}</span>
+                  <span>•</span>
+                  <span>{revision.dueDate}</span>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {revision.status !== 'completed' && (
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); handleComplete(revision.id); }}
-                    className="hidden sm:flex items-center gap-1 px-3 py-1.5 rounded-lg bg-success/15 text-success text-xs font-medium hover:bg-success/25 transition-colors"
-                  >
-                    <CheckCircle2 className="w-3 h-3" /> Complete
-                  </button>
-                )}
-                <ChevronRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
+              {revision.status !== 'completed' && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleComplete(revision.id); }}
+                  className="flex items-center gap-1 px-2 py-1 rounded bg-success/15 text-success text-[10px] font-medium hover:bg-success/25 transition-colors flex-shrink-0"
+                >
+                  <CheckCircle2 className="w-3 h-3" /> Done
+                </button>
+              )}
             </div>
           </div>
         ))}

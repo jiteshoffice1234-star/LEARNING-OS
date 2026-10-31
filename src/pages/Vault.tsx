@@ -16,58 +16,53 @@ export default function Vault() {
   });
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
-          <h1 className="text-2xl font-bold text-text">Achievement Vault</h1>
-          <p className="text-sm text-muted mt-1">Your certificates, achievements and documents</p>
+          <h1 className="text-xl font-bold text-text">Achievement Vault</h1>
+          <p className="text-xs text-muted">{achievements.length} items · 2.4 MB</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
-          <Upload className="w-4 h-4" />
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors">
+          <Upload className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Upload</span>
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-text">{achievements.length}</p>
-          <p className="text-xs text-muted">Total Items</p>
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] text-text font-medium">{achievements.length}</span>
+          <span className="text-[10px] text-muted">Total</span>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-success">{achievements.filter(a => a.verified).length}</p>
-          <p className="text-xs text-muted">Verified</p>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] text-success font-medium">{achievements.filter(a => a.verified).length}</span>
+          <span className="text-[10px] text-muted">Verified</span>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-primary">3</p>
-          <p className="text-xs text-muted">This Year</p>
-        </div>
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-warning">2.4 MB</p>
-          <p className="text-xs text-muted">Storage Used</p>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] text-primary font-medium">3</span>
+          <span className="text-[10px] text-muted">This Year</span>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="flex-1 flex items-center gap-2 bg-elevated/50 rounded-lg px-3 py-2 border border-border/50">
-          <Search className="w-4 h-4 text-muted" />
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1 flex items-center gap-2 bg-elevated/50 rounded-lg px-2.5 py-1.5 border border-border/50">
+          <Search className="w-3.5 h-3.5 text-muted" />
           <input 
             type="text" 
-            placeholder="Search certificates..." 
+            placeholder="Search..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent text-sm text-text placeholder:text-muted outline-none w-full"
+            className="bg-transparent text-xs text-text placeholder:text-muted outline-none w-full"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-muted" />
+        <div className="flex items-center gap-1">
           {categories.map((cat) => (
             <button 
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
                 selectedCategory === cat ? 'bg-primary/15 text-primary' : 'text-muted hover:text-text'
               }`}
             >
@@ -78,45 +73,40 @@ export default function Vault() {
       </div>
 
       {/* Achievement Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {filteredAchievements.map((achievement) => (
-          <div key={achievement.id} className="glass-card rounded-xl p-5 hover:border-primary/30 transition-all group">
-            <div className="flex items-start justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Award className="w-6 h-6 text-primary" />
+          <div key={achievement.id} className="glass-card rounded-lg p-3 hover:border-primary/30 transition-all group">
+            <div className="flex items-start justify-between mb-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                <Award className="w-4 h-4 text-primary" />
               </div>
               <div className="flex items-center gap-1">
                 {achievement.verified && (
-                  <span className="flex items-center gap-1 text-[10px] text-success bg-success/10 px-1.5 py-0.5 rounded-full">
-                    <Shield className="w-3 h-3" /> Verified
+                  <span className="flex items-center gap-0.5 text-[9px] text-success bg-success/10 px-1 py-0.5 rounded">
+                    <Shield className="w-2.5 h-2.5" /> ✓
                   </span>
                 )}
               </div>
             </div>
-            <h3 className="text-sm font-semibold text-text mb-1 line-clamp-2">{achievement.title}</h3>
-            <p className="text-xs text-muted mb-3">{achievement.issuer}</p>
+            <h3 className="text-xs font-semibold text-text mb-0.5 line-clamp-2">{achievement.title}</h3>
+            <p className="text-[10px] text-muted mb-2 line-clamp-1">{achievement.issuer}</p>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-elevated text-muted">
-                  {achievement.category}
-                </span>
-                <span className="text-xs text-muted">{achievement.date}</span>
-              </div>
-              <button className="p-1.5 rounded-lg hover:bg-elevated text-muted hover:text-text opacity-0 group-hover:opacity-100 transition-all">
-                <ExternalLink className="w-3.5 h-3.5" />
-              </button>
+              <span className="text-[9px] text-muted">{achievement.date}</span>
+              <span className="text-[9px] px-1 py-0.5 rounded bg-elevated text-muted">
+                {achievement.category}
+              </span>
             </div>
           </div>
         ))}
 
         {/* Upload Card */}
-        <div className="rounded-xl border-2 border-dashed border-border hover:border-primary/40 p-5 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors min-h-[200px]">
-          <div className="w-12 h-12 rounded-xl bg-elevated/50 flex items-center justify-center">
-            <Upload className="w-5 h-5 text-muted" />
+        <div className="rounded-lg border border-dashed border-border hover:border-primary/40 p-3 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors min-h-[120px]">
+          <div className="w-8 h-8 rounded bg-elevated/50 flex items-center justify-center">
+            <Upload className="w-4 h-4 text-muted" />
           </div>
           <div className="text-center">
-            <p className="text-sm text-text font-medium">Upload Document</p>
-            <p className="text-xs text-muted mt-1">PDF, JPG, PNG, DOC up to 25MB</p>
+            <p className="text-xs text-text font-medium">Upload</p>
+            <p className="text-[10px] text-muted">PDF, JPG, PNG</p>
           </div>
         </div>
       </div>

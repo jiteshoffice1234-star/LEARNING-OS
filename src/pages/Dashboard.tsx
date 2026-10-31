@@ -12,20 +12,17 @@ export default function Dashboard() {
   const totalHours = 1247;
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-6 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 lg:p-5 space-y-4 pb-20 md:pb-5">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
         <div>
-          <h1 className="text-2xl font-bold text-text">Good morning, Arjun 👋</h1>
-          <p className="text-sm text-muted mt-1">You're on a {streak}-day streak. Keep it going!</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted">Today: Oct 31, 2026</span>
+          <h1 className="text-xl font-bold text-text">Good morning, Arjun 👋</h1>
+          <p className="text-xs text-muted">{streak}-day streak · Oct 31, 2026</p>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <StatCard 
           icon={Clock} 
           label="Today's Study" 
@@ -60,10 +57,10 @@ export default function Dashboard() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Weekly Study Chart */}
-        <div className="lg:col-span-2 glass-card rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
+        <div className="lg:col-span-2 glass-card rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="text-sm font-semibold text-text">Weekly Study Hours</h3>
               <p className="text-xs text-muted mt-0.5">29.9h / 28h target</p>
@@ -79,7 +76,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="h-48">
+          <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={weeklyStudyData}>
                 <defs>
@@ -103,9 +100,9 @@ export default function Dashboard() {
         </div>
 
         {/* Study Heatmap */}
-        <div className="glass-card rounded-xl p-5">
+        <div className="glass-card rounded-xl p-4">
           <h3 className="text-sm font-semibold text-text mb-1">Activity Heatmap</h3>
-          <p className="text-xs text-muted mb-4">Last 4 months</p>
+          <p className="text-xs text-muted mb-2">Last 4 months</p>
           <div className="grid grid-cols-7 gap-1">
             {heatmapData.slice(-49).map((day, i) => {
               const intensity = day.hours === 0 ? 0 : day.hours < 2 ? 1 : day.hours < 4 ? 2 : day.hours < 6 ? 3 : 4;
@@ -134,10 +131,10 @@ export default function Dashboard() {
       </div>
 
       {/* Course Progress & Upcoming */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Course Progress */}
-        <div className="glass-card rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
+        <div className="glass-card rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-text">Course Progress</h3>
             <button className="text-xs text-primary hover:text-accent transition-colors">View all</button>
           </div>
@@ -163,8 +160,8 @@ export default function Dashboard() {
         </div>
 
         {/* Upcoming Revisions */}
-        <div className="glass-card rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
+        <div className="glass-card rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-text">Upcoming Revisions</h3>
             <button className="text-xs text-primary hover:text-accent transition-colors">View all</button>
           </div>
@@ -196,9 +193,9 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Achievements & Quick Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 glass-card rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div className="lg:col-span-2 glass-card rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-text">Recent Achievements</h3>
             <button className="text-xs text-primary hover:text-accent transition-colors">View vault</button>
           </div>
@@ -219,9 +216,9 @@ export default function Dashboard() {
         </div>
 
         {/* Monthly Comparison */}
-        <div className="glass-card rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-text mb-4">Monthly Trend</h3>
-          <div className="h-40">
+        <div className="glass-card rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-text mb-3">Monthly Trend</h3>
+          <div className="h-36">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={[
                 { month: 'Jul', hours: 95 },
@@ -269,10 +266,10 @@ function StatCard({ icon: Icon, label, value, subtext, progress, trend, color }:
   };
 
   return (
-    <div className="glass-card rounded-xl p-4 md:p-5 animate-fade-in">
-      <div className="flex items-center justify-between mb-3">
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorMap[color]}`}>
-          <Icon className="w-4 h-4" />
+    <div className="glass-card rounded-xl p-3 animate-fade-in">
+      <div className="flex items-center justify-between mb-2">
+        <div className={`w-7 h-7 rounded-md flex items-center justify-center ${colorMap[color]}`}>
+          <Icon className="w-3.5 h-3.5" />
         </div>
         {trend && (
           <div className={`flex items-center gap-0.5 text-xs ${trend === 'up' ? 'text-success' : 'text-danger'}`}>
@@ -280,10 +277,10 @@ function StatCard({ icon: Icon, label, value, subtext, progress, trend, color }:
           </div>
         )}
       </div>
-      <p className="text-xl md:text-2xl font-bold text-text">{value}</p>
-      <p className="text-xs text-muted mt-1">{subtext}</p>
+      <p className="text-lg font-bold text-text">{value}</p>
+      <p className="text-[11px] text-muted mt-0.5">{subtext}</p>
       {progress !== undefined && (
-        <div className="mt-3 h-1 bg-elevated rounded-full overflow-hidden">
+        <div className="mt-2 h-1 bg-elevated rounded-full overflow-hidden">
           <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: `${Math.min(progress, 100)}%` }} />
         </div>
       )}

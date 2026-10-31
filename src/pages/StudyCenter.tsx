@@ -87,15 +87,15 @@ export default function StudyCenter() {
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-2xl font-bold text-text">Study Center</h1>
-          <p className="text-sm text-muted mt-1">Manage your courses, subjects and chapters</p>
+          <h1 className="text-xl font-bold text-text">Study Center</h1>
+          <p className="text-xs text-muted">Courses · Subjects · Chapters</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
-          <Plus className="w-4 h-4" />
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors">
+          <Plus className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">New Course</span>
         </button>
       </div>
@@ -113,69 +113,61 @@ export default function StudyCenter() {
 
       {/* Course Grid or Subject List */}
       {!selectedCourse ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
           {courses.map((course) => (
             <div 
               key={course.id} 
               onClick={() => setSelectedCourse(course.id)}
-              className="glass-card rounded-xl p-5 cursor-pointer hover:border-primary/30 transition-all group"
+              className="glass-card rounded-lg p-3 cursor-pointer hover:border-primary/30 transition-all group"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${course.color}20` }}>
-                  <BookOpen className="w-5 h-5" style={{ color: course.color }} />
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-              <h3 className="text-sm font-semibold text-text mb-1">{course.name}</h3>
-              <p className="text-xs text-muted mb-3">{course.subjects} subjects</p>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-muted">Progress</span>
-                <span className="text-xs font-medium text-text">{course.progress}%</span>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${course.color}20` }}>
+                  <BookOpen className="w-4 h-4" style={{ color: course.color }} />
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
-              <div className="h-1.5 bg-elevated rounded-full overflow-hidden">
+              <h3 className="text-xs font-semibold text-text mb-0.5 line-clamp-1">{course.name}</h3>
+              <p className="text-[10px] text-muted mb-2">{course.subjects} subjects</p>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] text-muted">{course.progress}%</span>
+              </div>
+              <div className="h-1 bg-elevated rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all" style={{ width: `${course.progress}%`, backgroundColor: course.color }} />
               </div>
             </div>
           ))}
           
           {/* Add Course Card */}
-          <div className="rounded-xl border-2 border-dashed border-border hover:border-primary/40 p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors min-h-[160px]">
-            <Plus className="w-6 h-6 text-muted" />
-            <span className="text-xs text-muted">Add Course</span>
+          <div className="rounded-lg border border-dashed border-border hover:border-primary/40 p-3 flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors min-h-[100px]">
+            <Plus className="w-4 h-4 text-muted" />
+            <span className="text-[10px] text-muted">Add Course</span>
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-1.5">
           {filteredSubjects.map((subject) => (
             <div 
               key={subject.id}
               onClick={() => setSelectedSubject(subject.id)}
-              className="glass-card rounded-xl p-4 cursor-pointer hover:border-primary/30 transition-all group flex items-center gap-4"
+              className="glass-card rounded-lg p-2.5 cursor-pointer hover:border-primary/30 transition-all group flex items-center gap-3"
             >
-              <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center flex-shrink-0">
-                <FolderOpen className="w-5 h-5 text-primary" />
+              <div className="w-8 h-8 rounded-md bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <FolderOpen className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-text">{subject.name}</h3>
-                <div className="flex items-center gap-4 mt-1">
-                  <span className="text-xs text-muted flex items-center gap-1">
-                    <FileText className="w-3 h-3" /> {subject.chapters} chapters
-                  </span>
-                  <span className="text-xs text-muted flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {subject.hours}h
-                  </span>
+                <h3 className="text-sm font-medium text-text">{subject.name}</h3>
+                <div className="flex items-center gap-3 mt-0.5">
+                  <span className="text-[11px] text-muted">{subject.chapters}ch · {subject.hours}h</span>
                 </div>
               </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="hidden sm:block w-24">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] text-muted">{subject.progress}%</span>
-                  </div>
-                  <div className="h-1.5 bg-elevated rounded-full overflow-hidden">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="hidden sm:flex items-center gap-2">
+                  <div className="w-20 h-1 bg-elevated rounded-full overflow-hidden">
                     <div className="h-full bg-primary rounded-full" style={{ width: `${subject.progress}%` }} />
                   </div>
+                  <span className="text-[10px] text-muted w-7 text-right">{subject.progress}%</span>
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
+                <ChevronRight className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
           ))}

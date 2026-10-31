@@ -77,59 +77,50 @@ export default function InboxPage() {
   };
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2">
-            <InboxIcon className="w-6 h-6 text-primary" />
+          <h1 className="text-xl font-bold text-text flex items-center gap-2">
+            <InboxIcon className="w-5 h-5 text-primary" />
             Inbox
           </h1>
-          <p className="text-sm text-muted mt-1">Quick capture and organize your thoughts</p>
+          <p className="text-xs text-muted">Quick capture · {newCount} new</p>
         </div>
         <button 
           onClick={() => setShowCaptureModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20"
         >
-          <Plus className="w-4 h-4" />
-          <span>Quick Capture</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Capture</span>
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-primary" />
-            <span className="text-xs text-muted">New</span>
-          </div>
-          <p className="text-2xl font-bold text-text">{newCount}</p>
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+          <span className="text-[11px] text-text font-medium">{newCount}</span>
+          <span className="text-[10px] text-muted">New</span>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-warning" />
-            <span className="text-xs text-muted">Reviewing</span>
-          </div>
-          <p className="text-2xl font-bold text-text">{captures.filter(c => c.status === 'reviewing').length}</p>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <div className="w-1.5 h-1.5 rounded-full bg-warning" />
+          <span className="text-[11px] text-text font-medium">{captures.filter(c => c.status === 'reviewing').length}</span>
+          <span className="text-[10px] text-muted">Review</span>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-success" />
-            <span className="text-xs text-muted">Organized</span>
-          </div>
-          <p className="text-2xl font-bold text-text">{captures.filter(c => c.status === 'organized').length}</p>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <div className="w-1.5 h-1.5 rounded-full bg-success" />
+          <span className="text-[11px] text-text font-medium">{captures.filter(c => c.status === 'organized').length}</span>
+          <span className="text-[10px] text-muted">Organized</span>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-muted" />
-            <span className="text-xs text-muted">Total</span>
-          </div>
-          <p className="text-2xl font-bold text-text">{captures.length}</p>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] text-text font-medium">{captures.length}</span>
+          <span className="text-[10px] text-muted">Total</span>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
         {(['all', 'new', 'reviewing', 'organized', 'archived'] as const).map((f) => (
           <button
             key={f}
@@ -144,7 +135,7 @@ export default function InboxPage() {
       </div>
 
       {/* Capture List */}
-      <div className="space-y-2">
+      <div className="space-y-1">
         {filtered.map((capture) => {
           const typeInfo = typeConfig[capture.type];
           const statusInfo = statusConfig[capture.status];
@@ -154,37 +145,19 @@ export default function InboxPage() {
             <div
               key={capture.id}
               onClick={() => setSelectedCapture(capture)}
-              className="glass-card rounded-xl p-4 cursor-pointer hover:border-primary/30 transition-all group"
+              className="glass-card rounded-lg p-2 cursor-pointer hover:border-primary/30 transition-all group flex items-center gap-2"
             >
-              <div className="flex items-start gap-3">
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${typeInfo.bg}`}>
-                  <TypeIcon className={`w-4 h-4 ${typeInfo.color}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-text truncate">{capture.title}</h3>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${statusInfo.bg} ${statusInfo.color}`}>
-                      {statusInfo.label}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted line-clamp-1">{capture.content}</p>
-                  <div className="flex items-center gap-3 mt-2">
-                    <span className="text-[10px] text-muted flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {capture.timestamp}
-                    </span>
-                    {capture.tags.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        {capture.tags.slice(0, 2).map(tag => (
-                          <span key={tag} className="text-[10px] px-1.5 py-0.5 rounded bg-elevated/50 text-muted">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
+              <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${typeInfo.bg}`}>
+                <TypeIcon className={`w-3.5 h-3.5 ${typeInfo.color}`} />
               </div>
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                <h3 className="text-xs font-medium text-text truncate flex-1">{capture.title}</h3>
+                <span className={`text-[9px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${statusInfo.bg} ${statusInfo.color}`}>
+                  {statusInfo.label}
+                </span>
+                <span className="text-[10px] text-muted flex-shrink-0">{capture.timestamp.split(' ')[1]}</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </div>
           );
         })}

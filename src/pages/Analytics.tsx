@@ -7,60 +7,60 @@ import { subjectDistribution, performanceTrend, monthlyStudyData, weeklyStudyDat
 
 export default function Analytics() {
   return (
-    <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text">Analytics</h1>
-        <p className="text-sm text-muted mt-1">Insights into your learning performance</p>
+      <div className="mb-3">
+        <h1 className="text-xl font-bold text-text">Analytics</h1>
+        <p className="text-xs text-muted">Learning performance insights</p>
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-primary" />
-            <span className="text-xs text-muted">Lifetime Hours</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+        <div className="glass-card rounded-lg p-2.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted">Lifetime Hours</span>
+            <Clock className="w-3 h-3 text-primary" />
           </div>
-          <p className="text-2xl font-bold text-text">1,247</p>
-          <p className="text-xs text-success flex items-center gap-0.5 mt-1">
-            <TrendingUp className="w-3 h-3" /> +28.5h this month
+          <p className="text-lg font-bold text-text">1,247</p>
+          <p className="text-[10px] text-success flex items-center gap-0.5">
+            <TrendingUp className="w-2.5 h-2.5" /> +28.5h
           </p>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <BookOpen className="w-4 h-4 text-success" />
-            <span className="text-xs text-muted">Daily Average</span>
+        <div className="glass-card rounded-lg p-2.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted">Daily Avg</span>
+            <BookOpen className="w-3 h-3 text-success" />
           </div>
-          <p className="text-2xl font-bold text-text">3.8h</p>
-          <p className="text-xs text-muted mt-1">Last 30 days</p>
+          <p className="text-lg font-bold text-text">3.8h</p>
+          <p className="text-[10px] text-muted">Last 30d</p>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="w-4 h-4 text-warning" />
-            <span className="text-xs text-muted">Avg Accuracy</span>
+        <div className="glass-card rounded-lg p-2.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted">Accuracy</span>
+            <Target className="w-3 h-3 text-warning" />
           </div>
-          <p className="text-2xl font-bold text-text">82%</p>
-          <p className="text-xs text-success flex items-center gap-0.5 mt-1">
-            <TrendingUp className="w-3 h-3" /> +4% vs last month
+          <p className="text-lg font-bold text-text">82%</p>
+          <p className="text-[10px] text-success flex items-center gap-0.5">
+            <TrendingUp className="w-2.5 h-2.5" /> +4%
           </p>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Award className="w-4 h-4 text-accent" />
-            <span className="text-xs text-muted">Certificates</span>
+        <div className="glass-card rounded-lg p-2.5">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted">Certificates</span>
+            <Award className="w-3 h-3 text-accent" />
           </div>
-          <p className="text-2xl font-bold text-text">5</p>
-          <p className="text-xs text-muted mt-1">3 this year</p>
+          <p className="text-lg font-bold text-text">5</p>
+          <p className="text-[10px] text-muted">3 this year</p>
         </div>
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
         {/* Performance Trend */}
-        <div className="glass-card rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-text mb-1">Performance Trend</h3>
-          <p className="text-xs text-muted mb-4">Test accuracy over time</p>
-          <div className="h-52">
+        <div className="glass-card rounded-xl p-3">
+          <h3 className="text-xs font-semibold text-text mb-0.5">Performance Trend</h3>
+          <p className="text-[10px] text-muted mb-2">Test accuracy over time</p>
+          <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={performanceTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#2A2F3A" vertical={false} />
@@ -77,10 +77,10 @@ export default function Analytics() {
         </div>
 
         {/* Subject Distribution */}
-        <div className="glass-card rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-text mb-1">Subject Distribution</h3>
-          <p className="text-xs text-muted mb-4">Time allocation by subject</p>
-          <div className="h-52 flex items-center">
+        <div className="glass-card rounded-xl p-3">
+          <h3 className="text-xs font-semibold text-text mb-0.5">Subject Distribution</h3>
+          <p className="text-[10px] text-muted mb-2">Time allocation by subject</p>
+          <div className="h-40 flex items-center">
             <div className="w-1/2 h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -117,12 +117,12 @@ export default function Analytics() {
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-3">
         {/* Weekly Hours */}
-        <div className="lg:col-span-2 glass-card rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-text mb-1">Weekly Study Hours</h3>
-          <p className="text-xs text-muted mb-4">Actual vs Target</p>
-          <div className="h-48">
+        <div className="lg:col-span-2 glass-card rounded-xl p-3">
+          <h3 className="text-xs font-semibold text-text mb-0.5">Weekly Study Hours</h3>
+          <p className="text-[10px] text-muted mb-2">Actual vs Target</p>
+          <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weeklyStudyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#2A2F3A" vertical={false} />
@@ -140,10 +140,10 @@ export default function Analytics() {
         </div>
 
         {/* Monthly Progress */}
-        <div className="glass-card rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-text mb-1">Monthly Hours</h3>
-          <p className="text-xs text-muted mb-4">This month</p>
-          <div className="h-48">
+        <div className="glass-card rounded-xl p-3">
+          <h3 className="text-xs font-semibold text-text mb-0.5">Monthly Hours</h3>
+          <p className="text-[10px] text-muted mb-2">This month</p>
+          <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={monthlyStudyData}>
                 <defs>
@@ -167,11 +167,11 @@ export default function Analytics() {
       </div>
 
       {/* Skills Progress & Weak Areas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* Skills Progress */}
-        <div className="glass-card rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-text mb-4">Skill Proficiency</h3>
-          <div className="space-y-3">
+        <div className="glass-card rounded-xl p-3">
+          <h3 className="text-xs font-semibold text-text mb-2">Skill Proficiency</h3>
+          <div className="space-y-1.5">
             {[
               { name: 'Python', level: 4, max: 5 },
               { name: 'JavaScript/TS', level: 4, max: 5 },
@@ -195,9 +195,9 @@ export default function Analytics() {
         </div>
 
         {/* Areas for Improvement */}
-        <div className="glass-card rounded-xl p-5">
-          <h3 className="text-sm font-semibold text-text mb-4">Areas for Improvement</h3>
-          <div className="space-y-3">
+        <div className="glass-card rounded-xl p-3">
+          <h3 className="text-xs font-semibold text-text mb-2">Areas for Improvement</h3>
+          <div className="space-y-1.5">
             {[
               { topic: 'Dynamic Programming', subject: 'Algorithms', score: 55, trend: 'down' },
               { topic: 'Neural Networks', subject: 'ML', score: 62, trend: 'up' },

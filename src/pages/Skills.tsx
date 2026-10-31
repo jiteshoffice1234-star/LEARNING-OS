@@ -123,41 +123,37 @@ export default function Skills() {
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+    <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
-          <h1 className="text-2xl font-bold text-text">Skills</h1>
-          <p className="text-sm text-muted mt-1">Track your skill development journey</p>
+          <h1 className="text-xl font-bold text-text">Skills</h1>
+          <p className="text-xs text-muted">{skills.length} skills · {skills.reduce((acc, s) => acc + s.hours, 0)}h total</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
-          <Plus className="w-4 h-4" />
+        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors">
+          <Plus className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Add Skill</span>
         </button>
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-text">{skills.length}</p>
-          <p className="text-xs text-muted">Total Skills</p>
+      <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] text-text font-medium">{skills.length}</span>
+          <span className="text-[10px] text-muted">Total</span>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-success">{skills.filter(s => s.status === 'learning').length}</p>
-          <p className="text-xs text-muted">Active Learning</p>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] text-success font-medium">{skills.filter(s => s.status === 'learning').length}</span>
+          <span className="text-[10px] text-muted">Active</span>
         </div>
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-primary">{skills.reduce((acc, s) => acc + s.hours, 0)}h</p>
-          <p className="text-xs text-muted">Total Hours</p>
-        </div>
-        <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-warning">{skills.filter(s => s.level >= 4).length}</p>
-          <p className="text-xs text-muted">Advanced+</p>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] text-warning font-medium">{skills.filter(s => s.level >= 4).length}</span>
+          <span className="text-[10px] text-muted">Advanced</span>
         </div>
       </div>
 
       {/* Category Filter */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+      <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
         <button 
           onClick={() => setSelectedCategory('All')}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
@@ -180,43 +176,39 @@ export default function Skills() {
       </div>
 
       {/* Skills Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
         {filteredSkills.map((skill) => (
           <div 
             key={skill.id}
             onClick={() => setSelectedSkill(skill.id)}
-            className="glass-card rounded-xl p-5 cursor-pointer hover:border-primary/30 transition-all group"
+            className="glass-card rounded-lg p-2.5 cursor-pointer hover:border-primary/30 transition-all group"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${levelColors[skill.level]}20` }}>
-                  <Brain className="w-4 h-4" style={{ color: levelColors[skill.level] }} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-text">{skill.name}</h3>
-                  <p className="text-[10px] text-muted">{skill.category}</p>
-                </div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-6 h-6 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${levelColors[skill.level]}20` }}>
+                <Brain className="w-3 h-3" style={{ color: levelColors[skill.level] }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="text-xs font-semibold text-text truncate">{skill.name}</h3>
+                <p className="text-[9px] text-muted">{skill.category}</p>
               </div>
             </div>
             
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-muted">Level {skill.level}/5</span>
-              <span className="text-xs font-medium" style={{ color: levelColors[skill.level] }}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[10px] text-muted">L{skill.level}</span>
+              <span className="text-[10px] font-medium" style={{ color: levelColors[skill.level] }}>
                 {levelLabels[skill.level]}
               </span>
             </div>
-            <div className="h-1.5 bg-elevated rounded-full overflow-hidden mb-3">
+            <div className="h-1 bg-elevated rounded-full overflow-hidden mb-1.5">
               <div 
                 className="h-full rounded-full transition-all" 
                 style={{ width: `${(skill.level / 5) * 100}%`, backgroundColor: levelColors[skill.level] }}
               />
             </div>
             
-            <div className="flex items-center justify-between text-xs text-muted">
-              <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {skill.hours}h
-              </span>
-              <span>Target: {levelLabels[skill.targetLevel]}</span>
+            <div className="flex items-center justify-between text-[10px] text-muted">
+              <span>{skill.hours}h</span>
+              <span>→ {levelLabels[skill.targetLevel]}</span>
             </div>
           </div>
         ))}
