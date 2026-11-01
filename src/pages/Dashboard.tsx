@@ -3,7 +3,8 @@ import {
   Clock, Target, Flame, TrendingUp, BookOpen, Award,
   ArrowUpRight, ArrowDownRight, CheckCircle2, AlertCircle
 } from 'lucide-react';
-import { courses, revisions, achievements, heatmapData } from '../data/mockData';
+import { isDataWiped, store } from '../lib/storage';
+import { heatmapData, achievements } from '../data/mockData';
 
 // recharts is heavy (~400 kB) so the charts load on demand. The rest of the
 // dashboard renders immediately; only the chart frames wait for their chunk.
@@ -17,11 +18,67 @@ function ChartSkeleton({ className }: { className?: string }) {
   );
 }
 
+interface Course {
+  id: string;
+  name: string;
+  color: string;
+  progress: number;
+  subjects: number;
+}
+
+interface Revision {
+  id: string;
+  subject: string;
+  title?: string;
+  dueDate: string;
+  status: 'upcoming' | 'overdue' | 'completed';
+  cycle: number;
+}
+
+interface Achievement {
+  id: string;
+  title: string;
+  issuer: string;
+  date: string;
+  category: string;
+  verified: boolean;
+}
+
 /**
  * Dashboard — the landing page.
+ * Reads real data from persistent storage; shows empty state after data wipe.
  * `onNavigate` lets the card-level links jump to their full pages.
  */
 export default function Dashboard({ onNavigate }: { onNavigate?: (page: string) => void }) {
+  const wiped = isDataWiped();
+  const courses = store.get<Course[]>('courses', []);
+  const revisions = store.get<Revision[]>('revisions', []);
+  const profile = store.get<{ name: string }>('profile', { name: 'Learner' });
+
+  // Empty state after data wipe
+  if (wiped) {
+    return (
+      <div className="p-3 md:p-4 lg:p-5 space-y-4 pb-20 md:pb-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
+          <div>
+            <h1 className="text-xl font-bold text-text">Good morning 👋</h1>
+            <p className="text-xs text-muted">Your data has been cleared. Start adding content to see it here.</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+          <StatCard icon={Clock} label="Today's Study" value="0h" subtext="of 4h target" progress={0} color="primary" />
+          <StatCard icon={Flame} label="Current Streak" value="0 days" subtext="Personal best: 0" trend="up" color="warning" />
+          <StatCard icon={TrendingUp} label="Total Hours" value="0" subtext="0h this month" trend="up" color="success" />
+          <StatCard icon={Target} label="Courses Active" value="0" subtext="0% avg progress" color="accent" />
+        </div>
+        <div className="glass-card rounded-xl p-8 text-center py-16">
+          <Clock className="w-12 h-12 text-muted/30 mx-auto mb-3" />
+          <p className="text-sm text-muted">No data yet. Add courses, tasks, and revisions to populate your dashboard.</p>
+        </div>
+      </div>
+    );
+  }
+
   const todayHours = 3.5;
   const dailyTarget = 4;
   const streak = 42;
@@ -32,7 +89,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (page: string) 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
         <div>
-          <h1 className="text-xl font-bold text-text">Good morning, Arjun 👋</h1>
+          <h1 className="text-xl font-bold text-text">Good morning, {profile.name || 'Learner'} 👋</h1>
           <p className="text-xs text-muted">{streak}-day streak · Oct 31, 2026</p>
         </div>
       </div>
@@ -66,7 +123,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (page: string) 
         <StatCard 
           icon={Target} 
           label="Courses Active" 
-          value="4" 
+          value={courses.length.toString()} 
           subtext="68% avg progress"
           color="accent"
         />

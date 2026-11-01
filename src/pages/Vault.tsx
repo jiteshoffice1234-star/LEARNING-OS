@@ -3,7 +3,7 @@ import {
   Award, FileText, Image, Search, Upload, Shield, Trash2, ExternalLink,
   CheckCircle2, AlertCircle, Cloud, CloudOff,
 } from 'lucide-react';
-import { achievements } from '../data/mockData';
+import { isDataWiped } from '../lib/storage';
 import {
   listFiles, uploadFile, removeFile, isSupabaseConfigured,
   type StoredFile,
@@ -13,6 +13,7 @@ import { formatBytes } from '../lib/storage';
 const ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx';
 
 export default function Vault() {
+  const wiped = isDataWiped();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [files, setFiles] = useState<StoredFile[]>(() => listFiles());
@@ -22,6 +23,14 @@ export default function Vault() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const categories = ['All', 'Certification', 'Achievement', 'Education', 'Project'];
+
+  const achievements = wiped ? [] : [
+    { id: '1', title: 'AWS Solutions Architect', issuer: 'Amazon Web Services', date: '2025-03', category: 'Certification', verified: true },
+    { id: '2', title: 'TensorFlow Developer Certificate', issuer: 'Google', date: '2025-06', category: 'Certification', verified: true },
+    { id: '3', title: 'Kubernetes Application Developer', issuer: 'CNCF', date: '2025-09', category: 'Certification', verified: true },
+    { id: '4', title: 'First Place - University Hackathon', issuer: 'University Tech Club', date: '2024-11', category: 'Achievement', verified: false },
+    { id: '5', title: 'Open Source Contributor Badge', issuer: 'GitHub', date: '2025-01', category: 'Achievement', verified: true },
+  ];
 
   const filteredAchievements = achievements.filter((a) => {
     const matchesCategory = selectedCategory === 'All' || a.category === selectedCategory;
