@@ -1,29 +1,49 @@
 import { useRef, useState } from 'react';
-import { usePersistentState, clearAll } from '../lib/storage';
+import { usePersistentState, clearAll, isDataWiped, store } from '../lib/storage';
 import { uploadFile } from '../lib/files';
 import { User, Camera, MapPin, Globe, Briefcase, GraduationCap, Target, Edit3, Save, X } from 'lucide-react';
 
 export default function Profile() {
+  const wiped = isDataWiped();
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-  const [profile, setProfile] = usePersistentState('profile', {
-    name: 'Arjun Kumar',
-    education: 'Undergraduate',
-    focus: 'Computer Science',
-    situation: 'Student',
-    goal: 'Skill Mastery',
-    dailyTime: '4 hours',
-    institution: 'IIT Delhi',
-    qualification: 'B.Tech Computer Science',
-    country: 'India',
-    language: 'English',
-    introduction: 'Passionate about building systems that scale. Currently focused on machine learning and distributed systems.',
-    careerObjective: 'Become a senior ML engineer at a top tech company within 3 years.',
-    avatarUrl: '',
-  });
+
+  const defaultProfile = wiped
+    ? {
+        name: '',
+        education: '',
+        focus: '',
+        situation: '',
+        goal: '',
+        dailyTime: '',
+        institution: '',
+        qualification: '',
+        country: '',
+        language: '',
+        introduction: '',
+        careerObjective: '',
+        avatarUrl: '',
+      }
+    : {
+        name: 'Arjun Kumar',
+        education: 'Undergraduate',
+        focus: 'Computer Science',
+        situation: 'Student',
+        goal: 'Skill Mastery',
+        dailyTime: '4 hours',
+        institution: 'IIT Delhi',
+        qualification: 'B.Tech Computer Science',
+        country: 'India',
+        language: 'English',
+        introduction: 'Passionate about building systems that scale. Currently focused on machine learning and distributed systems.',
+        careerObjective: 'Become a senior ML engineer at a top tech company within 3 years.',
+        avatarUrl: '',
+      };
+
+  const [profile, setProfile] = usePersistentState('profile', defaultProfile);
 
   /** Upload an avatar image and persist its URL onto the profile. */
   const handleAvatar = async (file: File | undefined) => {
@@ -43,13 +63,20 @@ export default function Profile() {
     }
   };
 
+  // Derive stats from actual stored data
+  const tasks = store.get<{ id: string }[]>('tasks', []);
+  const skills = store.get<{ id: string }[]>('skills', []);
+  const tests = store.get<{ id: string }[]>('tests', []);
+  const courses = store.get<{ id: string }[]>('courses', []);
+  const qualifications = store.get<{ id: string }[]>('qualifications', []);
+
   const stats = {
-    totalHours: 1247,
-    streak: 42,
-    courses: 4,
-    skills: 8,
-    certificates: 5,
-    tests: 23,
+    totalHours: tests.reduce((acc, t) => acc + (t as any).timeTaken || 0, 0) / 60,
+    streak: wiped ? 0 : 42,
+    courses: courses.length,
+    skills: skills.length,
+    certificates: qualifications.length,
+    tests: tests.length,
   };
 
   return (
@@ -63,9 +90,7 @@ export default function Profile() {
           </div>
           <button 
             onClick={() => setIsEditing(!isEditing)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              isEditing ? 'bg-success text-white hover:bg-success/90' : 'bg-elevated text-text hover:bg-elevated/80'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isEditing ? 'bg-success text-white hover:bg-success/90' : 'bg-elevated text-text hover:bg-elevated/80'}`}
           >
             {isEditing ? (
               <><Save className="w-4 h-4" /> Save Changes</>
@@ -98,7 +123,7 @@ export default function Profile() {
                 />
               ) : (
                 <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-primary/25">
-                  {profile.name.split(' ').map(n => n[0]).join('')}
+                  {profile.name ? profile.name.split(' ').map((n) => n[0]).join('') : 'LU'}
                 </div>
               )}
               <button
@@ -111,7 +136,7 @@ export default function Profile() {
                 <Camera className="w-4 h-4 text-muted" />
               </button>
             </div>
-            
+
             {/* Info */}
             <div className="flex-1 text-center sm:text-left">
               {isEditing ? (
@@ -122,7 +147,7 @@ export default function Profile() {
                   className="text-xl font-bold text-text bg-elevated border border-border rounded-lg px-3 py-1.5 w-full sm:w-auto focus:outline-none focus:border-primary"
                 />
               ) : (
-                <h2 className="text-xl font-bold text-text">{profile.name}</h2>
+                <h2 className="text-xl font-bold text-text">{profile.name || 'Learner'}</h2>
               )}
               <p className="text-sm text-muted mt-1">{profile.situation} • {profile.education}</p>
               {avatarError && (
@@ -139,7 +164,7 @@ export default function Profile() {
         {/* Stats */}
         <div className="grid grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {[
-            { label: 'Hours', value: stats.totalHours, color: 'text-primary' },
+            { label: 'Hours', value: Math.round(stats.totalHours), color: 'text-primary' },
             { label: 'Streak', value: `${stats.streak}d`, color: 'text-warning' },
             { label: 'Courses', value: stats.courses, color: 'text-success' },
             { label: 'Skills', value: stats.skills, color: 'text-accent' },
