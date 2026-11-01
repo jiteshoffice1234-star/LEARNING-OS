@@ -1,30 +1,56 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#a855f7;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="24" stdDeviation="24" flood-opacity="0.35" />
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
   </defs>
+
   <!-- Rounded square background -->
-  <rect width="1024" height="1024" rx="230" fill="#0f121a" />
-  <!-- Gradient book cover -->
-  <rect x="190" y="220" width="644" height="584" rx="60" fill="url(#grad)" filter="url(#shadow)" />
-  <!-- Book spine / target center -->
-  <circle cx="512" cy="512" r="150" fill="#111318" />
-  <circle cx="512" cy="512" r="110" fill="none" stroke="#ffffff" stroke-width="14" />
-  <circle cx="512" cy="512" r="42" fill="#6366f1" />
-  <!-- Graduation cap on top right -->
-  <path d="M 740 300 L 830 280 L 830 360 L 740 380 Z" fill="#a855f7" />
-  <rect x="772" y="342" width="60" height="40" rx="4" fill="#6366f1" />
-  <!-- Open book pages -->
-  <path d="M 290 420 Q 512 220 734 420 L 734 640 Q 512 820 290 640 Z" fill="none" stroke="#ffffff" stroke-width="8" stroke-linejoin="round" />
-  <!-- Pages fold lines -->
-  <path d="M 360 520 Q 512 400 664 520" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.5" />
-  <path d="M 340 560 Q 512 480 684 560" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.4" />
-  <!-- Checkmark on book -->
-  <path d="M 380 640 L 460 720 L 620 560" fill="none" stroke="#43b889" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" />
+  <rect width="1024" height="1024" rx="180" fill="#0a0a0b" />
+
+  <!-- Neural network nodes -->
+  <g fill="#ffffff">
+    <!-- Outer ring nodes -->
+    <circle cx="400" cy="320" r="22" />
+    <circle cx="624" cy="380" r="22" />
+    <circle cx="640" cy="500" r="22" />
+    <circle cx="624" cy="640" r="22" />
+    <circle cx="400" cy="700" r="22" />
+    <circle cx="176" cy="640" r="22" />
+    <circle cx="160" cy="500" r="22" />
+    <circle cx="176" cy="380" r="22" />
+    <!-- Center nodes -->
+    <circle cx="512" cy="360" r="22" />
+    <circle cx="512" cy="500" r="22" />
+    <circle cx="512" cy="640" r="22" />
+  </g>
+
+  <!-- Neural network connections -->
+  <g stroke="#ffffff" stroke-width="10" stroke-linecap="round" fill="none" opacity="0.9">
+    <!-- Outer ring connections -->
+    <line x1="400" y1="320" x2="512" y2="360" />
+    <line x1="512" y1="360" x2="624" y2="380" />
+    <line x1="624" y1="380" x2="640" y2="500" />
+    <line x1="640" y1="500" x2="624" y2="640" />
+    <line x1="624" y1="640" x2="400" y2="700" />
+    <line x1="400" y1="700" x2="176" y2="640" />
+    <line x1="176" y1="640" x2="160" y2="500" />
+    <line x1="160" y1="500" x2="176" y2="380" />
+    <line x1="176" y1="380" x2="400" y2="320" />
+
+    <!-- Cross connections through center -->
+    <line x1="400" y1="320" x2="512" y2="500" />
+    <line x1="512" y1="500" x2="400" y2="700" />
+    <line x1="624" y1="380" x2="512" y2="640" />
+    <line x1="512" y1="640" x2="176" y2="380" />
+    <line x1="640" y1="500" x2="160" y2="500" />
+    <line x1="160" y1="500" x2="640" y2="500" />
+
+    <!-- Center vertical -->
+    <line x1="512" y1="360" x2="512" y2="640" />
+  </g>
+
+  <!-- Text: LEARNING OS -->
+  <text x="512" y="780" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="6">LEARNING OS</text>
 </svg>
