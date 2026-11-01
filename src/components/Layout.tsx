@@ -306,7 +306,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
 
         {/* User Profile */}
         {!collapsed && (
-          <div className="p-3 border-t border-border">
+          <div className="p-3 border-t border-border safe-area-bottom">
             <button type="button" 
               onClick={() => onNavigate('profile')}
               className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-elevated/50 transition-colors"
@@ -384,7 +384,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="h-14 border-b border-border bg-surface/80 backdrop-blur-sm flex items-center justify-between px-4 md:px-6 flex-shrink-0">
+        <header className="h-14 border-b border-border bg-surface/80 backdrop-blur-sm flex items-center justify-between px-4 md:px-6 flex-shrink-0 safe-area-top">
           <div className="flex items-center gap-3 flex-1 max-w-xl">
             <button type="button" 
               onClick={() => setMobileOpen(true)}
@@ -480,7 +480,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface border-t border-border flex items-center justify-around px-2 z-40">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface border-t border-border flex items-center justify-around px-2 z-40 safe-area-bottom">
         {[
           { id: 'dashboard', icon: Home, label: 'Home' },
           { id: 'study', icon: BookOpen, label: 'Learn' },
