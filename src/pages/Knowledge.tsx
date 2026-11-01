@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import { 
   Brain, Plus, Search, Tag, Link2, BookOpen, Lightbulb, 
   ExternalLink, Archive, Star, Filter, X
@@ -36,7 +36,8 @@ const typeConfig = {
 };
 
 export default function Knowledge() {
-  const [items, setItems] = usePersistentState<KnowledgeItem[]>('knowledge', initialKnowledge);
+  const wiped = isDataWiped();
+  const [items, setItems] = usePersistentState<KnowledgeItem[]>('knowledge', wiped ? [] : initialKnowledge);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);

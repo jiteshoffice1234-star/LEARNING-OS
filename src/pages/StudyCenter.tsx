@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
 import {
   BookOpen, ChevronRight, Clock, CheckCircle2,
@@ -45,8 +45,9 @@ const initialSubjects: Subject[] = [
 ];
 
 export default function StudyCenter() {
-  const [courses, setCourses] = usePersistentState<Course[]>('courses', initialCourses);
-  const [subjects, setSubjects] = usePersistentState<Subject[]>('subjects', initialSubjects);
+  const wiped = isDataWiped();
+  const [courses, setCourses] = usePersistentState<Course[]>('courses', wiped ? [] : initialCourses);
+  const [subjects, setSubjects] = usePersistentState<Subject[]>('subjects', wiped ? [] : initialSubjects);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 

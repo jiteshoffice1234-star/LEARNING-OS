@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Square, RotateCcw, Clock, BookOpen, Zap } from 'lucide-react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import { todayISO } from '../lib/dates';
 
 interface Session {
@@ -39,9 +39,18 @@ const initialTimer: TimerState = {
   subject: 'Algorithms & Data Structures',
 };
 
+const emptyTimer: TimerState = {
+  isRunning: false,
+  isPaused: false,
+  startTime: null,
+  baseElapsed: 0,
+  subject: '',
+};
+
 export default function StudyTimer() {
-  const [sessions, setSessions] = usePersistentState<Session[]>('studySessions', initialSessions);
-  const [timer, setTimer] = usePersistentState<TimerState>('studyTimer', initialTimer);
+  const wiped = isDataWiped();
+  const [sessions, setSessions] = usePersistentState<Session[]>('studySessions', wiped ? [] : initialSessions);
+  const [timer, setTimer] = usePersistentState<TimerState>('studyTimer', wiped ? emptyTimer : initialTimer);
   const [elapsed, setElapsed] = useState(0);
   const mountedRef = useRef(true);
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
 import { 
   Target, Plus, TrendingUp, Calendar, CheckCircle2, 
@@ -33,7 +33,8 @@ const typeConfig = {
 };
 
 export default function Goals() {
-  const [goals, setGoals] = usePersistentState<Goal[]>('goals', initialGoals);
+  const wiped = isDataWiped();
+  const [goals, setGoals] = usePersistentState<Goal[]>('goals', wiped ? [] : initialGoals);
   const [filter, setFilter] = useState<'all' | 'learning' | 'skill' | 'career' | 'personal'>('all');
 
   // --- New Goal form state ---

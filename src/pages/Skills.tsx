@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
 import { Brain, Plus, TrendingUp, Clock, Target, Award, Trash2 } from 'lucide-react';
 import { skills, skillCategories, roadmapItems } from '../data/mockData';
@@ -21,7 +21,8 @@ interface Skill {
 const skillStatuses = ['planned', 'learning', 'mastered'] as const;
 
 export default function Skills() {
-  const [skillList, setSkillList] = usePersistentState<Skill[]>('skills', skills);
+  const wiped = isDataWiped();
+  const [skillList, setSkillList] = usePersistentState<Skill[]>('skills', wiped ? [] : skills);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
 

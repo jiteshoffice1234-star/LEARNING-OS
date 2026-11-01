@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import { todayISO, addDaysISO } from '../lib/dates';
 import { 
   RotateCcw, Calendar, CheckCircle2, Clock, AlertTriangle, 
@@ -30,7 +30,8 @@ const initialRevisions: Revision[] = [
 ];
 
 export default function RevisionManager() {
-  const [revisions, setRevisions] = usePersistentState<Revision[]>('revisions', initialRevisions);
+  const wiped = isDataWiped();
+  const [revisions, setRevisions] = usePersistentState<Revision[]>('revisions', wiped ? [] : initialRevisions);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);

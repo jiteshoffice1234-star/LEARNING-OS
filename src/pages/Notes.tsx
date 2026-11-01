@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { FileText, Plus, Search, Tag, Archive, Clock, BookOpen, X, Edit2, ExternalLink } from 'lucide-react';
 import { notes as seedNotes } from '../data/mockData';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
 
 interface Note {
@@ -13,7 +13,8 @@ interface Note {
 }
 
 export default function Notes() {
-  const [notes, setNotes] = usePersistentState<Note[]>('notes', seedNotes);
+  const wiped = isDataWiped();
+  const [notes, setNotes] = usePersistentState<Note[]>('notes', wiped ? [] : seedNotes);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);

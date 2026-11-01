@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
 import {
   Target, Calendar, TrendingUp, AlertTriangle, CheckCircle2,
@@ -49,8 +49,9 @@ const initialItems: RoadmapItem[] = [
 ];
 
 export default function Roadmap() {
-  const [roadmaps, setRoadmaps] = usePersistentState<Roadmap[]>('roadmaps', initialRoadmaps);
-  const [items, setItems] = usePersistentState<RoadmapItem[]>('roadmapItems', initialItems);
+  const wiped = isDataWiped();
+  const [roadmaps, setRoadmaps] = usePersistentState<Roadmap[]>('roadmaps', wiped ? [] : initialRoadmaps);
+  const [items, setItems] = usePersistentState<RoadmapItem[]>('roadmapItems', wiped ? [] : initialItems);
   const [selectedRoadmap, setSelectedRoadmap] = useState<Roadmap | null>(roadmaps[0] ?? null);
   const [viewMode, setViewMode] = useState<'gantt' | 'timeline'>('gantt');
   const [duration, setDuration] = useState<'3m' | '6m' | '1y' | '5y'>('6m');

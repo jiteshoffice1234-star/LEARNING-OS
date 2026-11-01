@@ -3,7 +3,7 @@ import {
   Lightbulb, Plus, RotateCw, ChevronRight, CheckCircle2, 
   Clock, BookOpen, X, ArrowRight, ArrowLeft, Shuffle
 } from 'lucide-react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import { scheduleCard, isDue, todayISO } from '../lib/srs';
 
 interface Flashcard {
@@ -76,7 +76,8 @@ const initialDecks: Deck[] = [
 ];
 
 export default function Flashcards() {
-  const [decks, setDecks] = usePersistentState<Deck[]>('decks', initialDecks);
+  const wiped = isDataWiped();
+  const [decks, setDecks] = usePersistentState<Deck[]>('decks', wiped ? [] : initialDecks);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [studyMode, setStudyMode] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);

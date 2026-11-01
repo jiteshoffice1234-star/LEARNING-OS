@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
 import { todayISO } from '../lib/dates';
 import { 
@@ -34,7 +34,8 @@ const initialTests: Test[] = [
 ];
 
 export default function TestsCenter() {
-  const [tests, setTests] = usePersistentState<Test[]>('tests', initialTests);
+  const wiped = isDataWiped();
+  const [tests, setTests] = usePersistentState<Test[]>('tests', wiped ? [] : initialTests);
   const [selectedTest, setSelectedTest] = useState<Test | null>(null);
   const [filter, setFilter] = useState<'all' | 'mock' | 'subject' | 'chapter'>('all');
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
 import { 
   GraduationCap, Plus, Award, BookOpen, Clock, CheckCircle2,
@@ -41,7 +41,8 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; bg:
 const statusLabels: Qualification['status'][] = ['planned', 'pursuing', 'completed', 'paused', 'discontinued'];
 
 export default function Qualifications() {
-  const [quals, setQuals] = usePersistentState<Qualification[]>('qualifications', initialQualifications);
+  const wiped = isDataWiped();
+  const [quals, setQuals] = usePersistentState<Qualification[]>('qualifications', wiped ? [] : initialQualifications);
   const [filter, setFilter] = useState<'all' | 'academic' | 'professional'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedQual, setSelectedQual] = useState<Qualification | null>(null);

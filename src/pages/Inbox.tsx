@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { store, usePersistentState } from '../lib/storage';
+import { store, usePersistentState, isDataWiped } from '../lib/storage';
 import Modal from '../components/Modal';
 import { notes as seedNotes } from '../data/mockData';
 import { 
@@ -103,7 +103,8 @@ function goalTypeFor(tags: string[]): GoalItem['type'] {
 }
 
 export default function InboxPage() {
-  const [captures, setCaptures] = usePersistentState<Capture[]>('captures', initialCaptures);
+  const wiped = isDataWiped();
+  const [captures, setCaptures] = usePersistentState<Capture[]>('captures', wiped ? [] : initialCaptures);
   const [filter, setFilter] = useState<'all' | 'new' | 'reviewing' | 'organized' | 'archived'>('all');
   const [showCaptureModal, setShowCaptureModal] = useState(false);
   const [selectedCapture, setSelectedCapture] = useState<Capture | null>(null);

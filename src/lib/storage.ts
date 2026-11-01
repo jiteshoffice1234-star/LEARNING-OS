@@ -154,9 +154,9 @@ export function usePersistentState<T>(
 ): [T, (value: T | ((prev: T) => T)) => void] {
   // Capture the initial value once per key. Inline literals are then safe.
   const initialRef = useRef<{ key: string; value: T }>({ key, value: initialValue });
-  if (initialRef.current.key !== key) {
-    initialRef.current = { key, value: initialValue };
-  }
+  // Always refresh so callers can pass a different initial (e.g. empty after wipe).
+  initialRef.current.key = key;
+  initialRef.current.value = initialValue;
   const initial = initialRef.current.value;
 
   // Seed on first ever access so the key exists and exports include it.
@@ -297,9 +297,22 @@ export function importAll(payload: unknown): ImportResult {
   };
 }
 
-/** Wipe the whole namespace (Danger Zone → Delete All Data). */
+/** Wipe the whole namespace (Danger Zone → Delete All Data).
+ *
+ * Preserves the onboarding flag so the user isn't forced through Welcome again,
+ * and sets `dataWiped` so demo data doesn't re-seed on the next read.
+ */
 export function clearAll() {
-  listKeys().forEach((key) => removeValue(key));
+  listKeys().forEach((key) => {
+    if (key === 'onboardingComplete') return; // keep onboarding state
+    removeValue(key);
+  });
+  writeValue('dataWiped', true);
+}
+
+/** True when the user has manually cleared all data (demo data should not re-seed). */
+export function isDataWiped(): boolean {
+  return readValue('dataWiped', false);
 }
 
 /** Approximate bytes used by the namespace — shown in Backup Center. */

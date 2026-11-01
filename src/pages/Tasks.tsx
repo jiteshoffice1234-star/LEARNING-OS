@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import { 
   CheckSquare, Plus, CheckCircle2, Circle, Clock, AlertTriangle, 
   Calendar, Flag, X, Tag, Filter
@@ -35,7 +35,8 @@ const priorityConfig = {
 };
 
 export default function Tasks() {
-  const [tasks, setTasks] = usePersistentState<Task[]>('tasks', initialTasks);
+  const wiped = isDataWiped();
+  const [tasks, setTasks] = usePersistentState<Task[]>('tasks', wiped ? [] : initialTasks);
   const [filter, setFilter] = useState<'all' | 'todo' | 'in-progress' | 'done'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');

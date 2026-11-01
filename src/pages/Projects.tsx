@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
 import { 
   Zap, Plus, Clock, CheckCircle2, Calendar, Users, 
@@ -34,7 +34,8 @@ const statusConfig = {
 };
 
 export default function Projects() {
-  const [projects, setProjects] = usePersistentState<Project[]>('projects', initialProjects);
+  const wiped = isDataWiped();
+  const [projects, setProjects] = usePersistentState<Project[]>('projects', wiped ? [] : initialProjects);
   const [filter, setFilter] = useState<'all' | 'active' | 'planning' | 'completed'>('all');
 
   // --- New Project form state ---

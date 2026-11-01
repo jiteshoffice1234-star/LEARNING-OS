@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal from '../components/Modal';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon, Plus, Trash2 } from 'lucide-react';
 
@@ -29,7 +29,8 @@ const initialEvents: CalendarEvent[] = [
 ];
 
 export default function CalendarPage() {
-  const [events, setEvents] = usePersistentState<CalendarEvent[]>('calendarEvents', initialEvents);
+  const wiped = isDataWiped();
+  const [events, setEvents] = usePersistentState<CalendarEvent[]>('calendarEvents', wiped ? [] : initialEvents);
   const [currentDate, setCurrentDate] = useState(new Date(2026, 10, 1));
   const [view, setView] = useState<'month' | 'week'>('month');
   const [dayOpen, setDayOpen] = useState<string | null>(null);
