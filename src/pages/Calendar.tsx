@@ -99,9 +99,9 @@ export default function CalendarPage() {
           <p className="text-xs text-muted">Study schedule and events</p>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setView('week')} className="text-xs font-medium">Week</button>
+          <button type="button" onClick={() => { setView('week'); }} className="text-xs font-medium">Week</button>
           <button type="button" onClick={() => setView('month')} className="text-xs font-medium">Month</button>
-          <button type="button" onClick={() => { setShowAdd(true); }} className="bg-primary text-white px-3 py-1 rounded">
+          <button type="button" onClick={() => { setShowAdd(true); setNewEvent((p) => ({ ...p, date: dayOpen ?? todayStr })); }} className="bg-primary text-white px-3 py-1 rounded">
             <Plus className="w-3 h-3" />
           </button>
         </div>
@@ -157,7 +157,7 @@ export default function CalendarPage() {
             </div>
           ))}
           {getEventsForDay(dayOpen).length === 0 && <div className="text-center py-6 text-xs text-muted">No events on {dayOpen}. Add one below.</div>}
-          <button type="button" onClick={() => { setShowAdd(true); }} className="mt-4 flex-1 px-4 py-2.5 rounded-lg bg-primary text-white">Add Event</button>
+          <button type="button" onClick={() => { setShowAdd(true); setNewEvent((p) => ({ ...p, date: dayOpen })); }} className="mt-4 flex-1 px-4 py-2.5 rounded-lg bg-primary text-white">Add Event</button>
           <button type="button" onClick={() => setDayOpen(null)} className="mt-2 flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text">Close</button>
         </Modal>
       )}
