@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState, isDataWiped, readValue } from '../lib/storage';
+import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal from '../components/Modal';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon, Plus, Trash2 } from 'lucide-react';
 
@@ -52,57 +52,6 @@ export default function CalendarPage() {
 
   const todayStr = formatDay(new Date());
 
-  // Calculate streak from stored test dates
-  const calendarEvents = wiped ? [] : readValue<{ date: string }[]>('calendarEvents', []);
-  const sortedDates = calendarEvents.map(e => e.date).sort().reverse();
-  let streak = 0;
-  let bestStreak = 0;
-  let totalStudyDays = sortedDates.length;
-  if (sortedDates.length > 0) {
-    const today = new Date().toISOString().slice(0, 10);
-    let checkDate = new Date(today);
-    let foundToday = false;
-    let currentStreak = 0;
-    let best = 0;
-    let tempStreak = 0;
-    let prevDate: string | null = null;
-
-    for (const d of sortedDates) {
-      if (prevDate === null) {
-        tempStreak = 1;
-        prevDate = d;
-      } else {
-        const prev = new Date(prevDate);
-        const curr = new Date(d);
-        const diffDays = Math.ceil((prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays === 1) {
-          tempStreak++;
-        } else if (diffDays > 1) {
-          best = Math.max(best, tempStreak);
-          tempStreak = 1;
-        }
-        prevDate = d;
-      }
-    }
-    best = Math.max(best, tempStreak);
-    bestStreak = best;
-
-    // Check if today is in the dates to count current streak
-    if (sortedDates.includes(today)) {
-      streak = tempStreak;
-    } else {
-      // Check if yesterday is in dates - if so, streak continues from yesterday
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().slice(0, 10);
-      if (sortedDates.includes(yesterdayStr)) {
-        streak = tempStreak;
-      } else {
-        streak = 0;
-      }
-    }
-  }
-
   const [showAdd, setShowAdd] = useState(false);
   const [newEvent, setNewEvent] = useState<{ title: string; date: string; type: CalendarEvent['type']; time: string; description: string }>({ title: '', date: todayStr, type: 'event', time: '', description: '' });
 
@@ -143,6 +92,7 @@ export default function CalendarPage() {
 
   return (
     <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-xl font-bold text-text">Calendar</h1>
@@ -157,11 +107,12 @@ export default function CalendarPage() {
         </div>
       </div>
 
+      {/* Calendar Grid */}
       <div className="glass-card rounded-xl p-3">
         <div className="flex items-center justify-between mb-6">
-          <button type="button" onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronLeft className="w-5 h-5" /></button>
+          <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronLeft className="w-5 h-5" /></button>
           <h2 className="text-lg font-semibold text-text">{monthName}</h2>
-          <button type="button" onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronRight className="w-5 h-5" /></button>
+          <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronRight className="w-5 h-5" /></button>
         </div>
 
         <div className="grid grid-cols-7 gap-1 mb-2">
@@ -192,6 +143,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
+      {/* Day Detail */}
       {dayOpen && (
         <Modal open onClose={() => setDayOpen(null)} title={dayOpen} description={dayDescription}>
           {getEventsForDay(dayOpen).map((event) => (
@@ -210,6 +162,7 @@ export default function CalendarPage() {
         </Modal>
       )}
 
+      {/* Upcoming Events */}
       <div className="mt-3 glass-card rounded-xl p-3">
         <h3 className="text-xs font-semibold text-text mb-2">Upcoming Events</h3>
         <div className="space-y-1">
@@ -222,61 +175,6 @@ export default function CalendarPage() {
           ))}
         </div>
       </div>
-
-      <div className="mt-3 glass-card rounded-xl p-3">
-        <h3 className="text-xs font-semibold text-text mb-2">Study Streak</h3>
-        <div className="flex items-center gap-4">
-          <div className="text-center flex-1">
-            <p className="text-xl font-bold text-primary">{streak}</p>
-            <p className="text-[10px] text-muted">Current</p>
-          </div>
-          <div className="text-center flex-1">
-            <p className="text-xl font-bold text-text">{bestStreak}</p>
-            <p className="text-[10px] text-muted">Best</p>
-          </div>
-          <div className="text-center flex-1">
-            <p className="text-xl font-bold text-success">{totalStudyDays}</p>
-            <p className="text-[10px] text-muted">Total Days</p>
-          </div>
-        </div>
-      </div>
-
-      <Modal open={showAdd} onClose={() => { setShowAdd(false); resetEventForm(); }} title="New Event" description="Schedule a study event.">
-        <div>
-          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Title *</label>
-          <input type="text" placeholder="e.g. Algorithm Revision" value={newEvent.title} onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })} className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary" autoFocus />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Date</label>
-            <input type="date" value={newEvent.date} onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })} className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary" />
-          </div>
-          <div>
-            <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Time (optional)</label>
-            <input type="time" value={newEvent.time} onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })} className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary" />
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Type</label>
-          <div className="flex gap-2">
-            {(['revision', 'exam', 'milestone', 'event'] as const).map((t) => {
-              const isActive = newEvent.type === t;
-              const btnClass = `flex-1 px-3 py-2 rounded-lg text-xs font-medium capitalize ${isActive ? 'bg-primary text-white' : 'bg-elevated text-text'}`;
-              return (
-                <button key={t} type="button" onClick={() => setNewEvent({ ...newEvent, type: t })} className={btnClass}>{typeConfig[t].label}</button>
-              );
-            })}
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Description (optional)</label>
-          <textarea value={newEvent.description} onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })} rows={3} className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary resize-none" />
-        </div>
-        <div className="flex gap-2 mt-4">
-          <button type="button" onClick={() => { setShowAdd(false); resetEventForm(); }} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text">Cancel</button>
-          <button type="button" onClick={() => handleAddEvent(newEvent.date)} disabled={!newEvent.title.trim()} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white disabled:opacity-40">Create Event</button>
-        </div>
-      </Modal>
     </div>
   );
 }
