@@ -39,11 +39,33 @@ function PageLoading() {
 export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
   // Apply the persisted theme as early as possible.
   useEffect(() => {
     initTheme();
   }, []);
+
+  // Auto-refresh every 5 seconds.
+  // Pauses when user is typing in an input or a modal/dialog is open,
+  // so you never lose data mid-edit.
+  useEffect(() => {
+    if (!autoRefreshEnabled) return;
+    const timer = window.setInterval(() => {
+      const active = document.activeElement;
+      const isTyping =
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          active.tagName === 'SELECT' ||
+          (active as HTMLElement).isContentEditable);
+      const modalOpen = document.querySelector('[role="dialog"]') !== null;
+      if (!isTyping && !modalOpen) {
+        window.location.reload();
+      }
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [autoRefreshEnabled]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -54,6 +76,11 @@ export default function App() {
       }
       if (e.key === 'Escape') {
         setCommandPaletteOpen(false);
+      }
+      // Toggle auto-refresh with Ctrl+R
+      if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+        e.preventDefault();
+        setAutoRefreshEnabled(prev => !prev);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -104,6 +131,12 @@ export default function App() {
         onClose={() => setCommandPaletteOpen(false)}
         onNavigate={setCurrentPage}
       />
+      {/* Auto-refresh indicator */}
+      <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg bg-black/80 text-white text-xs backdrop-blur-sm">
+        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+        <span>Auto-refresh: {autoRefreshEnabled ? 'ON (5s)' : 'OFF'}</span>
+        <span className="ml-2 opacity-75">Ctrl+R to toggle</span>
+      </div>
     </>
   );
 }
