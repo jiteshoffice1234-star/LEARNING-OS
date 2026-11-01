@@ -100,7 +100,7 @@ export default function Qualifications() {
           <h1 className="text-2xl font-bold text-text">Qualifications</h1>
           <p className="text-sm text-muted mt-1">Your academic and professional credentials</p>
         </div>
-        <button 
+        <button type="button" 
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
         >
@@ -322,7 +322,7 @@ export default function Qualifications() {
           <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-text">{selectedQual.name}</h2>
-              <button onClick={() => setSelectedQual(null)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">✕</button>
+              <button type="button" onClick={() => setSelectedQual(null)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">✕</button>
             </div>
 
             <div className="space-y-4">

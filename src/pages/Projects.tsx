@@ -95,7 +95,7 @@ export default function Projects() {
           </h1>
           <p className="text-sm text-muted mt-1">Build real things to solidify your learning</p>
         </div>
-        <button 
+        <button type="button" 
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
         >

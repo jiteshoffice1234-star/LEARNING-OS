@@ -88,7 +88,7 @@ export default function Tasks() {
           </h1>
           <p className="text-xs text-muted">To-dos and action items</p>
         </div>
-        <button 
+        <button type="button" 
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
         >
@@ -148,7 +148,7 @@ export default function Tasks() {
               className="glass-card rounded-lg p-2 hover:border-primary/20 transition-all group flex items-center gap-2"
             >
               {/* Checkbox */}
-              <button 
+              <button type="button" 
                 onClick={() => toggleStatus(task.id)}
                 className="flex-shrink-0"
               >
@@ -189,7 +189,7 @@ export default function Tasks() {
         <div className="text-center py-16">
           <CheckSquare className="w-12 h-12 text-muted/30 mx-auto mb-3" />
           <p className="text-sm text-muted">No tasks here</p>
-          <button 
+          <button type="button" 
             onClick={() => setShowAddModal(true)}
             className="mt-4 px-4 py-2 rounded-lg bg-primary/15 text-primary text-sm font-medium hover:bg-primary/25 transition-colors"
           >
@@ -205,7 +205,7 @@ export default function Tasks() {
           <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-text">New Task</h2>
-              <button onClick={() => setShowAddModal(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
+              <button type="button" onClick={() => setShowAddModal(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -252,10 +252,10 @@ export default function Tasks() {
             </div>
 
             <div className="flex gap-2 mt-6">
-              <button onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">
+              <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">
                 Cancel
               </button>
-              <button 
+              <button type="button" 
                 onClick={handleAddTask}
                 disabled={!newTaskTitle.trim()}
                 className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"

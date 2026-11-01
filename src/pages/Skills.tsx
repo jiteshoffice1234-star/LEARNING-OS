@@ -87,7 +87,7 @@ export default function Skills() {
     
     return (
       <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-        <button 
+        <button type="button" 
           onClick={() => setSelectedSkill(null)}
           className="flex items-center gap-1 text-sm text-muted hover:text-text mb-4 transition-colors"
         >
@@ -230,7 +230,7 @@ export default function Skills() {
           <h1 className="text-xl font-bold text-text">Skills</h1>
           <p className="text-xs text-muted">{skillList.length} skills · {skillList.reduce((acc, s) => acc + s.hours, 0)}h total</p>
         </div>
-        <button 
+        <button type="button" 
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
         >
@@ -257,7 +257,7 @@ export default function Skills() {
 
       {/* Category Filter */}
       <div className="flex items-center gap-1.5 mb-3 overflow-x-auto pb-1">
-        <button 
+        <button type="button" 
           onClick={() => setSelectedCategory('All')}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
             selectedCategory === 'All' ? 'bg-primary/15 text-primary' : 'bg-elevated/50 text-muted hover:text-text'
@@ -266,7 +266,7 @@ export default function Skills() {
           All
         </button>
         {skillCategories.map((cat) => (
-          <button 
+          <button type="button" 
             key={cat}
             onClick={() => setSelectedCategory(cat)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${

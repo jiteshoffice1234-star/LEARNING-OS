@@ -149,9 +149,9 @@ export default function CalendarPage() {
           <p className="text-xs text-muted">Study schedule and events</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setView('week')} className="text-xs font-medium">Week</button>
-          <button onClick={() => setView('month')} className="text-xs font-medium">Month</button>
-          <button onClick={() => { setShowAdd(true); }} className="bg-primary text-white px-3 py-1 rounded">
+          <button type="button" onClick={() => setView('week')} className="text-xs font-medium">Week</button>
+          <button type="button" onClick={() => setView('month')} className="text-xs font-medium">Month</button>
+          <button type="button" onClick={() => { setShowAdd(true); }} className="bg-primary text-white px-3 py-1 rounded">
             <Plus className="w-3 h-3" />
           </button>
         </div>
@@ -159,9 +159,9 @@ export default function CalendarPage() {
 
       <div className="glass-card rounded-xl p-3">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronLeft className="w-5 h-5" /></button>
+          <button type="button" onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronLeft className="w-5 h-5" /></button>
           <h2 className="text-lg font-semibold text-text">{monthName}</h2>
-          <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronRight className="w-5 h-5" /></button>
+          <button type="button" onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronRight className="w-5 h-5" /></button>
         </div>
 
         <div className="grid grid-cols-7 gap-1 mb-2">
@@ -205,8 +205,8 @@ export default function CalendarPage() {
             </div>
           ))}
           {getEventsForDay(dayOpen).length === 0 && <div className="text-center py-6 text-xs text-muted">No events on {dayOpen}. Add one below.</div>}
-          <button onClick={() => { setShowAdd(true); }} className="mt-4 flex-1 px-4 py-2.5 rounded-lg bg-primary text-white">Add Event</button>
-          <button onClick={() => setDayOpen(null)} className="mt-2 flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text">Close</button>
+          <button type="button" onClick={() => { setShowAdd(true); }} className="mt-4 flex-1 px-4 py-2.5 rounded-lg bg-primary text-white">Add Event</button>
+          <button type="button" onClick={() => setDayOpen(null)} className="mt-2 flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text">Close</button>
         </Modal>
       )}
 
@@ -273,8 +273,8 @@ export default function CalendarPage() {
           <textarea value={newEvent.description} onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })} rows={3} className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary resize-none" />
         </div>
         <div className="flex gap-2 mt-4">
-          <button onClick={() => { setShowAdd(false); resetEventForm(); }} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text">Cancel</button>
-          <button onClick={() => handleAddEvent(newEvent.date)} disabled={!newEvent.title.trim()} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white disabled:opacity-40">Create Event</button>
+          <button type="button" onClick={() => { setShowAdd(false); resetEventForm(); }} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text">Cancel</button>
+          <button type="button" onClick={() => handleAddEvent(newEvent.date)} disabled={!newEvent.title.trim()} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white disabled:opacity-40">Create Event</button>
         </div>
       </Modal>
     </div>

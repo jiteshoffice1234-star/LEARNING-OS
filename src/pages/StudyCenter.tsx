@@ -131,7 +131,7 @@ export default function StudyCenter() {
               >
                 <Play className="w-3 h-3 mr-1" /> Start Session
               </button>
-              <button className="p-2 rounded-lg hover:bg-elevated text-muted transition-colors">
+              <button type="button" className="p-2 rounded-lg hover:bg-elevated text-muted transition-colors">
                 <MoreHorizontal className="w-4 h-4" />
               </button>
             </div>
@@ -235,7 +235,7 @@ export default function StudyCenter() {
       {/* Breadcrumb */}
       {selectedCourse && (
         <div className="flex items-center gap-2 mb-4 text-sm">
-          <button onClick={() => setSelectedCourse(null)} className="text-muted hover:text-text transition-colors">
+          <button type="button" onClick={() => setSelectedCourse(null)} className="text-muted hover:text-text transition-colors">
             All Courses
           </button>
           <ChevronRight className="w-3 h-3 text-muted" />

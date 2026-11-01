@@ -203,7 +203,7 @@ export default function StudyTimer() {
           {/* Controls */}
           <div className="flex items-center justify-center gap-3">
             {!timer.isRunning ? (
-              <button 
+              <button type="button" 
                 onClick={handleStart}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/25"
               >
@@ -212,14 +212,14 @@ export default function StudyTimer() {
               </button>
             ) : (
               <>
-                <button 
+                <button type="button" 
                   onClick={handleReset}
                   className="p-2.5 rounded-lg bg-elevated text-muted hover:text-text hover:bg-elevated/80 transition-colors"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
                 {timer.isPaused ? (
-                  <button 
+                  <button type="button" 
                     onClick={handleResume}
                     className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-success text-white font-medium text-sm hover:bg-success/90 transition-all"
                   >
@@ -227,7 +227,7 @@ export default function StudyTimer() {
                     Resume
                   </button>
                 ) : (
-                  <button 
+                  <button type="button" 
                     onClick={handlePause}
                     className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-warning text-bg font-medium text-sm hover:bg-warning/90 transition-all"
                   >
@@ -235,7 +235,7 @@ export default function StudyTimer() {
                     Pause
                   </button>
                 )}
-                <button 
+                <button type="button" 
                   onClick={handleStop}
                   className="p-2.5 rounded-lg bg-elevated text-danger hover:bg-danger/15 transition-colors"
                 >

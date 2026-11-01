@@ -239,7 +239,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               <Target className="w-4 h-4 text-primary" />
             </div>
           )}
-          <button 
+          <button type="button" 
             onClick={() => setCollapsed(!collapsed)}
             className="p-1.5 rounded-md hover:bg-elevated text-muted hover:text-text transition-colors"
           >
@@ -307,7 +307,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         {/* User Profile */}
         {!collapsed && (
           <div className="p-3 border-t border-border">
-            <button 
+            <button type="button" 
               onClick={() => onNavigate('profile')}
               className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-elevated/50 transition-colors"
             >
@@ -335,7 +335,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 </div>
                 <span className="font-bold text-sm tracking-tight gradient-text">LEARNING OS</span>
               </div>
-              <button onClick={() => setMobileOpen(false)} className="p-1.5 rounded-md hover:bg-elevated text-muted">
+              <button type="button" onClick={() => setMobileOpen(false)} className="p-1.5 rounded-md hover:bg-elevated text-muted">
                 <ChevronLeft className="w-4 h-4" />
               </button>
             </div>
@@ -386,7 +386,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
         {/* Top Bar */}
         <header className="h-14 border-b border-border bg-surface/80 backdrop-blur-sm flex items-center justify-between px-4 md:px-6 flex-shrink-0">
           <div className="flex items-center gap-3 flex-1 max-w-xl">
-            <button 
+            <button type="button" 
               onClick={() => setMobileOpen(true)}
               className="md:hidden p-2 rounded-lg hover:bg-elevated text-muted"
             >
@@ -394,7 +394,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
               </svg>
             </button>
-            <button 
+            <button type="button" 
               onClick={() => {
                 const event = new KeyboardEvent('keydown', { key: 'k', metaKey: true });
                 window.dispatchEvent(event);
@@ -409,7 +409,7 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <button 
+            <button type="button" 
               onClick={() => onNavigate('inbox')}
               className="p-2 rounded-lg hover:bg-elevated text-muted hover:text-text transition-colors relative"
               title="Quick Capture"

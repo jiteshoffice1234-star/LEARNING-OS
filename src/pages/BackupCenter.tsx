@@ -163,7 +163,7 @@ export default function BackupCenter() {
         <div className="glass-card rounded-xl p-5 mb-6">
           <h3 className="text-sm font-semibold text-text mb-4">Backup Actions</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button 
+            <button type="button" 
               onClick={handleBackup}
               disabled={isBackingUp}
               className="flex items-center gap-3 p-4 rounded-xl bg-primary/15 hover:bg-primary/25 transition-colors text-left disabled:opacity-50"
@@ -183,7 +183,7 @@ export default function BackupCenter() {
               </div>
             </button>
             
-            <button 
+            <button type="button" 
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-3 p-4 rounded-xl bg-elevated/50 hover:bg-elevated transition-colors text-left"
             >
@@ -196,7 +196,7 @@ export default function BackupCenter() {
               </div>
             </button>
 
-            <button 
+            <button type="button" 
               onClick={handleExportJSON}
               className="flex items-center gap-3 p-4 rounded-xl bg-elevated/50 hover:bg-elevated transition-colors text-left"
             >
@@ -270,21 +270,21 @@ export default function BackupCenter() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button 
+                    <button type="button" 
                       onClick={() => handleRestoreRecord(backup)}
                       title="Restore this backup"
                       className="p-1.5 rounded-lg hover:bg-elevated text-muted hover:text-success transition-colors"
                     >
                       <Upload className="w-3.5 h-3.5" />
                     </button>
-                    <button 
+                    <button type="button" 
                       onClick={() => downloadJSON(backup.payload, `learning-os-backup-${backup.date}.json`)}
                       title="Download this backup"
                       className="p-1.5 rounded-lg hover:bg-elevated text-muted hover:text-text transition-colors"
                     >
                       <Download className="w-3.5 h-3.5" />
                     </button>
-                    <button 
+                    <button type="button" 
                       onClick={() => handleDeleteRecord(backup.id)}
                       title="Delete this backup record"
                       className="p-1.5 rounded-lg hover:bg-danger/15 text-muted hover:text-danger transition-colors"

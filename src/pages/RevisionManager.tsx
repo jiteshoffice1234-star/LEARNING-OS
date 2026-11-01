@@ -101,7 +101,7 @@ export default function RevisionManager() {
           <h1 className="text-xl font-bold text-text">Revision Manager</h1>
           <p className="text-xs text-muted">Spaced repetition for retention</p>
         </div>
-        <button 
+        <button type="button" 
           onClick={() => setShowAddModal(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
         >
@@ -187,7 +187,7 @@ export default function RevisionManager() {
 
               {/* Actions */}
               {revision.status !== 'completed' && (
-                <button 
+                <button type="button" 
                   onClick={(e) => { e.stopPropagation(); handleComplete(revision.id); }}
                   className="flex items-center gap-1 px-2 py-1 rounded bg-success/15 text-success text-[10px] font-medium hover:bg-success/25 transition-colors flex-shrink-0"
                 >
@@ -206,7 +206,7 @@ export default function RevisionManager() {
           <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-text">Revision Details</h2>
-              <button onClick={() => setSelectedRevision(null)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">✕</button>
+              <button type="button" onClick={() => setSelectedRevision(null)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">✕</button>
             </div>
             
             <div className="space-y-4">
@@ -243,13 +243,13 @@ export default function RevisionManager() {
             <div className="flex gap-2 mt-6">
               {selectedRevision.status !== 'completed' && (
                 <>
-                  <button 
+                  <button type="button" 
                     onClick={() => handleComplete(selectedRevision.id)}
                     className="flex-1 px-4 py-2.5 rounded-lg bg-success text-white text-sm font-medium hover:bg-success/90 transition-colors"
                   >
                     Mark Complete
                   </button>
-                  <button 
+                  <button type="button" 
                     onClick={() => handlePostpone(selectedRevision.id)}
                     className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors"
                   >
@@ -257,7 +257,7 @@ export default function RevisionManager() {
                   </button>
                 </>
               )}
-              <button 
+              <button type="button" 
                 onClick={() => handleDelete(selectedRevision.id)}
                 className="px-4 py-2.5 rounded-lg bg-danger/15 text-danger text-sm font-medium hover:bg-danger/25 transition-colors"
               >
@@ -275,7 +275,7 @@ export default function RevisionManager() {
           <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-text">New Revision</h2>
-              <button onClick={() => setShowAddModal(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">✕</button>
+              <button type="button" onClick={() => setShowAddModal(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">✕</button>
             </div>
             <div className="space-y-4">
               <div>
@@ -337,8 +337,8 @@ export default function RevisionManager() {
               </div>
             </div>
             <div className="flex gap-2 mt-6">
-              <button onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">Cancel</button>
-              <button 
+              <button type="button" onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">Cancel</button>
+              <button type="button" 
                 onClick={handleCreate}
                 disabled={!newChapter.trim()}
                 className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"

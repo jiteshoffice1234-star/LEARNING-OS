@@ -114,7 +114,7 @@ export default function Goals() {
           </h1>
           <p className="text-sm text-muted mt-1">Set intentions and track your progress</p>
         </div>
-        <button 
+        <button type="button" 
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
         >

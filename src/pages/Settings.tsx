@@ -292,7 +292,7 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
               description="Local data in this browser"
               value={formatBytes(usedBytes())}
             />
-            <button 
+            <button type="button" 
               onClick={handleBackup}
               className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left"
             >
@@ -305,7 +305,7 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
             </button>
-            <button 
+            <button type="button" 
               onClick={() => onNavigate?.('backup')}
               className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left"
             >
@@ -318,7 +318,7 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
             </button>
-            <button 
+            <button type="button" 
               onClick={handleClearAll}
               className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left"
             >
@@ -427,7 +427,7 @@ function SettingRow({ icon: Icon, label, description, toggle, onToggle, value }:
         <p className="text-xs text-muted">{description}</p>
       </div>
       {toggle !== undefined ? (
-        <button onClick={onToggle} className="flex-shrink-0">
+        <button type="button" onClick={onToggle} className="flex-shrink-0">
           {toggle ? (
             <ToggleRight className="w-8 h-8 text-primary" />
           ) : (

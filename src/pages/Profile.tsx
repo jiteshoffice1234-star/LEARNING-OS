@@ -136,7 +136,7 @@ export default function Profile() {
             <h1 className="text-2xl font-bold text-text">Profile</h1>
             <p className="text-sm text-muted mt-1">Your personal learning identity</p>
           </div>
-          <button 
+          <button type="button" 
             onClick={() => setIsEditing(!isEditing)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isEditing ? 'bg-success text-white hover:bg-success/90' : 'bg-elevated text-text hover:bg-elevated/80'}`}
           >
@@ -282,7 +282,7 @@ export default function Profile() {
           <h3 className="text-sm font-semibold text-danger mb-2">Danger Zone</h3>
           <p className="text-xs text-muted mb-4">These actions cannot be undone.</p>
           <div className="flex flex-wrap gap-2">
-            <button 
+            <button type="button" 
               onClick={() => {
                 try { localStorage.removeItem('learningos:v1:onboardingComplete'); } catch { /* ignore */ }
                 window.location.reload();
@@ -291,7 +291,7 @@ export default function Profile() {
             >
               Reset Onboarding
             </button>
-            <button 
+            <button type="button" 
               onClick={() => {
                 if (!confirmDelete) {
                   setConfirmDelete(true);

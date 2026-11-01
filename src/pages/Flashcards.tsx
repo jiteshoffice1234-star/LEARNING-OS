@@ -200,7 +200,7 @@ export default function Flashcards() {
               <h2 className="text-lg font-bold text-text">{liveSelectedDeck.name}</h2>
               <p className="text-xs text-muted">Card {currentCardIndex + 1} of {liveSelectedDeck.cards.length}</p>
             </div>
-            <button 
+            <button type="button" 
               onClick={finishSession}
               className="p-2 rounded-lg hover:bg-elevated text-muted"
             >
@@ -234,7 +234,7 @@ export default function Flashcards() {
 
           {/* Controls */}
           <div className="flex items-center justify-between mt-6">
-            <button 
+            <button type="button" 
               onClick={handlePrevCard}
               disabled={currentCardIndex === 0}
               className="p-3 rounded-lg bg-elevated text-muted hover:text-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
@@ -244,19 +244,19 @@ export default function Flashcards() {
 
             {showAnswer ? (
               <div className="flex items-center gap-2">
-                <button 
+                <button type="button" 
                   onClick={() => handleRateCard('hard')}
                   className="px-4 py-2 rounded-lg bg-danger/15 text-danger text-sm font-medium hover:bg-danger/25 transition-colors"
                 >
                   Hard
                 </button>
-                <button 
+                <button type="button" 
                   onClick={() => handleRateCard('medium')}
                   className="px-4 py-2 rounded-lg bg-warning/15 text-warning text-sm font-medium hover:bg-warning/25 transition-colors"
                 >
                   Good
                 </button>
-                <button 
+                <button type="button" 
                   onClick={() => handleRateCard('easy')}
                   className="px-4 py-2 rounded-lg bg-success/15 text-success text-sm font-medium hover:bg-success/25 transition-colors"
                 >
@@ -264,7 +264,7 @@ export default function Flashcards() {
                 </button>
               </div>
             ) : (
-              <button 
+              <button type="button" 
                 onClick={() => setShowAnswer(true)}
                 className="px-6 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
               >
@@ -272,7 +272,7 @@ export default function Flashcards() {
               </button>
             )}
 
-            <button 
+            <button type="button" 
               onClick={handleNextCard}
               disabled={currentCardIndex === liveSelectedDeck.cards.length - 1}
               className="p-3 rounded-lg bg-elevated text-muted hover:text-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
@@ -296,7 +296,7 @@ export default function Flashcards() {
   if (liveSelectedDeck && !studyMode) {
     return (
       <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
-        <button 
+        <button type="button" 
           onClick={() => setSelectedDeck(null)}
           className="flex items-center gap-1 text-sm text-muted hover:text-text mb-4 transition-colors"
         >
@@ -309,7 +309,7 @@ export default function Flashcards() {
               <h2 className="text-xl font-bold text-text">{liveSelectedDeck.name}</h2>
               <p className="text-sm text-muted mt-1">{liveSelectedDeck.cards.length} cards • {liveSelectedDeck.subject}</p>
             </div>
-            <button 
+            <button type="button" 
               onClick={() => handleStartStudy(liveSelectedDeck)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
             >
@@ -377,7 +377,7 @@ export default function Flashcards() {
           </h1>
           <p className="text-sm text-muted mt-1">Active recall for better retention</p>
         </div>
-        <button 
+        <button type="button" 
           onClick={() => setShowNewDeck(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
         >
@@ -432,7 +432,7 @@ export default function Flashcards() {
                   </span>
                 )}
               </div>
-              <button 
+              <button type="button" 
                 onClick={(e) => { e.stopPropagation(); handleStartStudy(deck); }}
                 className="w-full mt-4 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
               >
@@ -460,7 +460,7 @@ export default function Flashcards() {
           <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-text">New Deck</h2>
-              <button onClick={() => setShowNewDeck(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
+              <button type="button" onClick={() => setShowNewDeck(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -490,7 +490,7 @@ export default function Flashcards() {
               </div>
             </div>
             <div className="flex gap-2 mt-6">
-              <button onClick={() => setShowNewDeck(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">
+              <button type="button" onClick={() => setShowNewDeck(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">
                 Cancel
               </button>
               <button

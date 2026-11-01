@@ -95,7 +95,7 @@ export default function Knowledge() {
           </h1>
           <p className="text-sm text-muted mt-1">Your personal knowledge graph</p>
         </div>
-        <button 
+        <button type="button" 
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
         >
@@ -140,7 +140,7 @@ export default function Knowledge() {
 
       {/* Type Filter */}
       <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-2">
-        <button 
+        <button type="button" 
           onClick={() => setSelectedType('all')}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
             selectedType === 'all' ? 'bg-primary/15 text-primary' : 'bg-elevated/50 text-muted hover:text-text'
@@ -189,14 +189,14 @@ export default function Knowledge() {
                   <TypeIcon className={`w-4 h-4 ${typeInfo.color}`} />
                 </div>
                 <div className="flex items-center gap-1">
-                  <button 
+                  <button type="button" 
                     onClick={() => handleDelete(item.id)}
                     title="Delete"
                     className="p-1 rounded text-muted hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
-                  <button 
+                  <button type="button" 
                     onClick={() => toggleStar(item.id)}
                     className={`p-1 rounded transition-colors ${item.starred ? 'text-warning' : 'text-muted hover:text-warning'}`}
                   >
@@ -239,7 +239,7 @@ export default function Knowledge() {
           <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-text">Add Knowledge Item</h2>
-              <button onClick={() => setShowAdd(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
+              <button type="button" onClick={() => setShowAdd(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -293,7 +293,7 @@ export default function Knowledge() {
               </div>
             </div>
             <div className="flex gap-2 mt-6">
-              <button onClick={() => setShowAdd(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">Cancel</button>
+              <button type="button" onClick={() => setShowAdd(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">Cancel</button>
               <button
                 onClick={handleAdd}
                 disabled={!newTitle.trim() || !newContent.trim()}

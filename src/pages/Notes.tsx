@@ -78,7 +78,7 @@ export default function Notes() {
           <h1 className="text-2xl font-bold text-text">Notes & Library</h1>
           <p className="text-sm text-muted mt-1">Your study notes and resources</p>
         </div>
-        <button 
+        <button type="button" 
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
         >
@@ -103,7 +103,7 @@ export default function Notes() {
 
       {/* Tags */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
-        <button 
+        <button type="button" 
           onClick={() => setSelectedTag(null)}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors ${
             !selectedTag ? 'bg-primary/15 text-primary' : 'bg-elevated/50 text-muted hover:text-text'
@@ -112,7 +112,7 @@ export default function Notes() {
           All
         </button>
         {allTags.map((tag) => (
-          <button 
+          <button type="button" 
             key={tag}
             onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors flex items-center gap-1 ${
@@ -186,7 +186,7 @@ export default function Notes() {
           <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-text">New Note</h2>
-              <button onClick={() => setShowAdd(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
+              <button type="button" onClick={() => setShowAdd(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -225,7 +225,7 @@ export default function Notes() {
               </div>
             </div>
             <div className="flex gap-2 mt-6">
-              <button onClick={() => setShowAdd(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">Cancel</button>
+              <button type="button" onClick={() => setShowAdd(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">Cancel</button>
               <button
                 onClick={handleCreate}
                 disabled={!newTitle.trim()}
