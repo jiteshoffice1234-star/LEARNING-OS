@@ -54,6 +54,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (page: string) 
   const courses = store.get<Course[]>('courses', []);
   const revisions = store.get<Revision[]>('revisions', []);
   const profile = store.get<{ name: string }>('profile', { name: 'Learner' });
+  const tests = store.get<{ date: string; timeTaken?: number }[]>('tests', []);
 
   // Empty state after data wipe
   if (wiped) {
@@ -81,8 +82,35 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (page: string) 
 
   const todayHours = 3.5;
   const dailyTarget = 4;
-  const streak = 42;
-  const totalHours = 1247;
+
+  // Calculate streak from stored test dates (consecutive days with activity)
+  const testDates = tests.map(t => t.date).sort().reverse();
+  let streak = 0;
+  if (testDates.length > 0) {
+    const today = new Date().toISOString().slice(0, 10);
+    let checkDate = new Date(today);
+    let found = false;
+    for (let i = 0; i < testDates.length; i++) {
+      const d = new Date(testDates[i]).toISOString().slice(0, 10);
+      if (d === today || (i === 0 && !found)) {
+        streak++;
+        found = true;
+        checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        const expected = new Date(checkDate);
+        expected.setDate(expected.getDate() - 1);
+        if (d === expected.toISOString().slice(0, 10)) {
+          streak++;
+          checkDate = expected;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
+  const totalHours = tests.reduce((acc, t) => acc + (t as any).timeTaken || 0, 0) / 60;
 
   return (
     <div className="p-3 md:p-4 lg:p-5 space-y-4 pb-20 md:pb-5">

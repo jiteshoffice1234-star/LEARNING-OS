@@ -6,7 +6,7 @@ import {
   RotateCcw, GraduationCap, Map, User, Database,
   Timer, Inbox, Lightbulb, CheckSquare, Zap, AlertCircle, CheckCircle2
 } from 'lucide-react';
-import { readValue } from '../lib/storage';
+import { readValue, isDataWiped } from '../lib/storage';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -146,6 +146,53 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   // Real notifications derived from the user's stored data (no fake badge).
   const notifications = buildNotifications();
 
+  // Profile data for sidebar display
+  const wiped = isDataWiped();
+  const profile = readValue<{ name: string }>('profile', { name: 'Learner' });
+
+  // Calculate streak from stored test dates
+  const tests = wiped ? [] : readValue<{ date: string }[]>('tests', []);
+  let streak = 0;
+  if (tests.length > 0) {
+    const sorted = tests.map(t => new Date(t.date).toISOString().slice(0, 10)).sort().reverse();
+    const today = new Date().toISOString().slice(0, 10);
+    let checkDate = new Date(today);
+    let foundToday = false;
+    for (let i = 0; i < sorted.length; i++) {
+      const d = sorted[i];
+      if (!foundToday && d === today) {
+        streak++;
+        foundToday = true;
+        checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (foundToday) {
+        const expected = new Date(checkDate);
+        expected.setDate(expected.getDate() - 1);
+        if (d === expected.toISOString().slice(0, 10)) {
+          streak++;
+          checkDate = expected;
+        } else {
+          break;
+        }
+      }
+    }
+    if (!foundToday && sorted.length > 0) {
+      streak = 1;
+      checkDate = new Date(sorted[0]);
+      checkDate.setDate(checkDate.getDate() - 1);
+      for (let i = 1; i < sorted.length; i++) {
+        const expected = new Date(checkDate);
+        expected.setDate(expected.getDate() - 1);
+        if (sorted[i] === expected.toISOString().slice(0, 10)) {
+          streak++;
+          checkDate = expected;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+
   // Close the dropdown when clicking anywhere outside it.
   useEffect(() => {
     if (!notifOpen) return;
@@ -263,11 +310,11 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
               className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-elevated/50 transition-colors"
             >
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-xs font-bold text-white">
-                A
+                {profile.name ? profile.name.split(' ').map((n) => n[0]).join('') : 'LU'}
               </div>
               <div className="flex-1 min-w-0 text-left">
-                <p className="text-sm font-medium text-text truncate">Arjun K.</p>
-                <p className="text-[10px] text-muted truncate">🔥 42 day streak</p>
+                <p className="text-sm font-medium text-text truncate">{profile.name || 'Learner'}</p>
+                <p className="text-[10px] text-muted truncate">🔥 {streak} day streak</p>
               </div>
             </button>
           </div>
