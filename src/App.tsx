@@ -1,7 +1,6 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import Layout from './components/Layout';
 import CommandPalette from './components/CommandPalette';
-import Welcome from './pages/Welcome';
 import Dashboard from './pages/Dashboard';
 import { initTheme } from './lib/theme';
 
@@ -37,21 +36,9 @@ function PageLoading() {
   );
 }
 
-const ONBOARDING_KEY = 'learningos:v1:onboardingComplete';
-
-function hasCompletedOnboarding(): boolean {
-  try {
-    return localStorage.getItem(ONBOARDING_KEY) === 'true';
-  } catch {
-    return true; // if storage is blocked, don't trap the user in onboarding
-  }
-}
-
 export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  // Show onboarding only on the very first visit.
-  const [showWelcome, setShowWelcome] = useState(() => !hasCompletedOnboarding());
 
   // Apply the persisted theme as early as possible.
   useEffect(() => {
@@ -72,10 +59,6 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  if (showWelcome) {
-    return <Welcome onComplete={() => setShowWelcome(false)} />;
-  }
 
   const renderPage = () => {
     switch (currentPage) {
