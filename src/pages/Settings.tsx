@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { 
   Settings as SettingsIcon, Moon, Sun, Bell, Clock, Database, 
   Shield, Download, Upload, HardDrive, Trash2, ChevronRight,
-  ToggleLeft, ToggleRight, Cloud, CloudOff, CheckCircle2, ExternalLink
+  ToggleLeft, ToggleRight, Cloud, CloudOff, CheckCircle2, ExternalLink,
+  Sparkles
 } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { usePersistentState, exportAll, clearAll, usedBytes, formatBytes } from '../lib/storage';
@@ -81,17 +82,57 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
         {/* Appearance */}
         <section className="mb-8">
           <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Moon className="w-4 h-4 text-primary" />
+            <Sun className="w-4 h-4 text-primary" />
             Appearance
           </h2>
           <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow 
+            <SettingRow
               icon={theme === 'dark' ? Moon : Sun}
               label="Dark Mode"
-              description={theme === 'dark' ? 'Dark theme is active' : 'Light theme is active'}
-              toggle={theme === 'dark'}
-              onToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              description={theme === 'dark' ? 'Dark theme is active' : 'Switch to dark theme'}
+              value={theme === 'dark' ? 'Active' : 'Inactive'}
             />
+            <SettingRow
+              icon={theme === 'light' ? Sun : Moon}
+              label="Light Mode"
+              description={theme === 'light' ? 'Light theme is active' : 'Switch to light theme'}
+              value={theme === 'light' ? 'Active' : 'Inactive'}
+            />
+            <SettingRow
+              icon={theme === 'claude' ? Sparkles : Sparkles}
+              label="Claude Mode"
+              description="Deep slate with amber accent — inspired by Claude"
+              value={theme === 'claude' ? 'Active' : 'Inactive'}
+            />
+            <div className="flex gap-1 p-4 bg-elevated/30">
+              {(['dark', 'light', 'claude'] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    theme === t
+                      ? t === 'claude'
+                        ? 'bg-amber-500 text-white'
+                        : t === 'dark'
+                        ? 'bg-primary text-white'
+                        : 'bg-surface text-text'
+                      : 'bg-elevated/50 text-muted hover:bg-elevated/80'
+                  }`}
+                >
+                  {t === 'dark' ? 'Dark' : t === 'light' ? 'Light' : 'Claude'}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Regional */}
+        <section className="mb-8">
+          <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-primary" />
+            Regional
+          </h2>
+          <div className="glass-card rounded-xl divide-y divide-border/50">
             <SettingRow 
               icon={Clock}
               label="Week Start"

@@ -51,6 +51,22 @@
   color-scheme: light;
 }
 
+/* Claude palette — deep slate with amber/gold accent */
+[data-theme='claude'] {
+  --app-bg: #0a0a0b;
+  --app-surface: #171d26;
+  --app-elevated: #22272e;
+  --app-primary: #f59e0b;
+  --app-accent: #fb923c;
+  --app-text: #fafafa;
+  --app-muted: #a1a1aa;
+  --app-success: #22c55e;
+  --app-warning: #f59e0b;
+  --app-danger: #ef4444;
+  --app-border: #27272a;
+  color-scheme: dark;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--app-border) var(--app-surface);
