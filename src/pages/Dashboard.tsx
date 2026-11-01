@@ -80,7 +80,10 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (page: string) 
     );
   }
 
-  const todayHours = 3.5;
+  const today = new Date().toISOString().slice(0, 10);
+  const todayHours = tests
+    .filter(t => t.date === today)
+    .reduce((acc, t) => acc + (t as any).timeTaken || 0, 0) / 60;
   const dailyTarget = 4;
 
   // Calculate streak from stored test dates (consecutive days with activity)

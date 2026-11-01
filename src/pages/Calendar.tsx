@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { usePersistentState, isDataWiped } from '../lib/storage';
+import { usePersistentState, isDataWiped, readValue } from '../lib/storage';
 import Modal from '../components/Modal';
 import { ChevronLeft, ChevronRight, Calendar as CalIcon, Plus, Trash2 } from 'lucide-react';
 
@@ -51,6 +51,57 @@ export default function CalendarPage() {
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
   const todayStr = formatDay(new Date());
+
+  // Calculate streak from stored test dates
+  const calendarEvents = wiped ? [] : readValue<{ date: string }[]>('calendarEvents', []);
+  const sortedDates = calendarEvents.map(e => e.date).sort().reverse();
+  let streak = 0;
+  let bestStreak = 0;
+  let totalStudyDays = sortedDates.length;
+  if (sortedDates.length > 0) {
+    const today = new Date().toISOString().slice(0, 10);
+    let checkDate = new Date(today);
+    let foundToday = false;
+    let currentStreak = 0;
+    let best = 0;
+    let tempStreak = 0;
+    let prevDate: string | null = null;
+
+    for (const d of sortedDates) {
+      if (prevDate === null) {
+        tempStreak = 1;
+        prevDate = d;
+      } else {
+        const prev = new Date(prevDate);
+        const curr = new Date(d);
+        const diffDays = Math.ceil((prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          tempStreak++;
+        } else if (diffDays > 1) {
+          best = Math.max(best, tempStreak);
+          tempStreak = 1;
+        }
+        prevDate = d;
+      }
+    }
+    best = Math.max(best, tempStreak);
+    bestStreak = best;
+
+    // Check if today is in the dates to count current streak
+    if (sortedDates.includes(today)) {
+      streak = tempStreak;
+    } else {
+      // Check if yesterday is in dates - if so, streak continues from yesterday
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().slice(0, 10);
+      if (sortedDates.includes(yesterdayStr)) {
+        streak = tempStreak;
+      } else {
+        streak = 0;
+      }
+    }
+  }
 
   const [showAdd, setShowAdd] = useState(false);
   const [newEvent, setNewEvent] = useState<{ title: string; date: string; type: CalendarEvent['type']; time: string; description: string }>({ title: '', date: todayStr, type: 'event', time: '', description: '' });
@@ -175,9 +226,18 @@ export default function CalendarPage() {
       <div className="mt-3 glass-card rounded-xl p-3">
         <h3 className="text-xs font-semibold text-text mb-2">Study Streak</h3>
         <div className="flex items-center gap-4">
-          <div className="text-center flex-1"><p className="text-xl font-bold text-primary">42</p><p className="text-[10px] text-muted">Current</p></div>
-          <div className="text-center flex-1"><p className="text-xl font-bold text-text">56</p><p className="text-[10px] text-muted">Best</p></div>
-          <div className="text-center flex-1"><p className="text-xl font-bold text-success">187</p><p className="text-[10px] text-muted">Total Days</p></div>
+          <div className="text-center flex-1">
+            <p className="text-xl font-bold text-primary">{streak}</p>
+            <p className="text-[10px] text-muted">Current</p>
+          </div>
+          <div className="text-center flex-1">
+            <p className="text-xl font-bold text-text">{bestStreak}</p>
+            <p className="text-[10px] text-muted">Best</p>
+          </div>
+          <div className="text-center flex-1">
+            <p className="text-xl font-bold text-success">{totalStudyDays}</p>
+            <p className="text-[10px] text-muted">Total Days</p>
+          </div>
         </div>
       </div>
 

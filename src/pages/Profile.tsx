@@ -66,13 +66,61 @@ export default function Profile() {
   // Derive stats from actual stored data
   const tasks = store.get<{ id: string }[]>('tasks', []);
   const skills = store.get<{ id: string }[]>('skills', []);
-  const tests = store.get<{ id: string }[]>('tests', []);
+  const tests = store.get<{ id: string; date: string }[]>('tests', []);
   const courses = store.get<{ id: string }[]>('courses', []);
   const qualifications = store.get<{ id: string }[]>('qualifications', []);
 
+  // Calculate streak from test dates (consecutive days with activity)
+  let streak = 0;
+  if (tests.length > 0 && !wiped) {
+    const sorted = tests.map(t => t.date).sort().reverse();
+    const today = new Date().toISOString().slice(0, 10);
+    let checkDate = new Date(today);
+    let foundToday = false;
+    for (let i = 0; i < sorted.length; i++) {
+      const d = sorted[i];
+      if (!foundToday && d === today) {
+        streak++;
+        foundToday = true;
+        checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (foundToday) {
+        const expected = new Date(checkDate);
+        expected.setDate(expected.getDate() - 1);
+        if (d === expected.toISOString().slice(0, 10)) {
+          streak++;
+          checkDate = expected;
+        } else {
+          break;
+        }
+      }
+    }
+    if (!foundToday && sorted.length > 0) {
+      // Check if yesterday is in dates
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().slice(0, 10);
+      if (sorted.includes(yesterdayStr)) {
+        streak = 1;
+        checkDate = new Date(yesterdayStr);
+        checkDate.setDate(checkDate.getDate() - 1);
+        for (let i = 1; i < sorted.length; i++) {
+          const expected = new Date(checkDate);
+          expected.setDate(expected.getDate() - 1);
+          if (sorted[i] === expected.toISOString().slice(0, 10)) {
+            streak++;
+            checkDate = expected;
+          } else {
+            break;
+          }
+        }
+      }
+    }
+  }
+
   const stats = {
     totalHours: tests.reduce((acc, t) => acc + (t as any).timeTaken || 0, 0) / 60,
-    streak: wiped ? 0 : 42,
+    streak,
     courses: courses.length,
     skills: skills.length,
     certificates: qualifications.length,
