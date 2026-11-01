@@ -6,7 +6,7 @@ import {
   RotateCcw, GraduationCap, Map, User, Database,
   Timer, Inbox, Lightbulb, CheckSquare, Zap, AlertCircle, CheckCircle2
 } from 'lucide-react';
-import { readValue, isDataWiped } from '../lib/storage';
+import { readValue, usePersistentState, clearAll, usedBytes, formatBytes, isDataWiped } from '../lib/storage';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -146,12 +146,14 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   // Real notifications derived from the user's stored data (no fake badge).
   const notifications = buildNotifications();
 
-  // Profile data for sidebar display
+  // Profile data for sidebar display — reactive so sidebar updates when you
+  // edit your name on the Profile page.
   const wiped = isDataWiped();
-  const profile = readValue<{ name: string }>('profile', { name: 'Learner' });
+  const [profile] = usePersistentState<{ name: string }>('profile', wiped ? { name: '' } : { name: 'Learner' });
 
   // Calculate streak from stored test dates
-  const tests = wiped ? [] : readValue<{ date: string }[]>('tests', []);
+  // Calculate streak from stored test dates (reactive — updates when you log tests)
+  const [tests] = usePersistentState<{ date: string }[]>('tests', wiped ? [] : []);
   let streak = 0;
   if (tests.length > 0) {
     const sorted = tests.map(t => new Date(t.date).toISOString().slice(0, 10)).sort().reverse();
