@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { usePersistentState } from '../lib/storage';
 import { 
   Brain, Plus, Search, Tag, Link2, BookOpen, Lightbulb, 
-  ExternalLink, Archive, Star, Filter
+  ExternalLink, Archive, Star, Filter, X
 } from 'lucide-react';
 
 interface KnowledgeItem {
@@ -35,10 +36,15 @@ const typeConfig = {
 };
 
 export default function Knowledge() {
-  const [items, setItems] = useState(initialKnowledge);
+  const [items, setItems] = usePersistentState<KnowledgeItem[]>('knowledge', initialKnowledge);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
+  const [newType, setNewType] = useState<KnowledgeItem['type']>('concept');
+  const [newTags, setNewTags] = useState('');
 
   const allTags = [...new Set(items.flatMap(i => i.tags))];
   
@@ -54,6 +60,29 @@ export default function Knowledge() {
     setItems(items.map(i => i.id === id ? { ...i, starred: !i.starred } : i));
   };
 
+  const handleDelete = (id: string) => {
+    setItems(items.filter(i => i.id !== id));
+  };
+
+  const handleAdd = () => {
+    if (!newTitle.trim() || !newContent.trim()) return;
+    const item: KnowledgeItem = {
+      id: Date.now().toString(),
+      title: newTitle.trim(),
+      content: newContent.trim(),
+      type: newType,
+      tags: newTags.split(',').map(t => t.trim()).filter(Boolean),
+      starred: false,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setItems([item, ...items]);
+    setNewTitle('');
+    setNewContent('');
+    setNewTags('');
+    setNewType('concept');
+    setShowAdd(false);
+  };
+
   return (
     <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
       {/* Header */}
@@ -65,7 +94,10 @@ export default function Knowledge() {
           </h1>
           <p className="text-sm text-muted mt-1">Your personal knowledge graph</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
+        <button 
+          onClick={() => setShowAdd(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Add Item</span>
         </button>
@@ -155,12 +187,21 @@ export default function Knowledge() {
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${typeInfo.bg}`}>
                   <TypeIcon className={`w-4 h-4 ${typeInfo.color}`} />
                 </div>
-                <button 
-                  onClick={() => toggleStar(item.id)}
-                  className={`p-1 rounded transition-colors ${item.starred ? 'text-warning' : 'text-muted hover:text-warning'}`}
-                >
-                  <Star className="w-3.5 h-3.5" fill={item.starred ? 'currentColor' : 'none'} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleDelete(item.id)}
+                    title="Delete"
+                    className="p-1 rounded text-muted hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <button 
+                    onClick={() => toggleStar(item.id)}
+                    className={`p-1 rounded transition-colors ${item.starred ? 'text-warning' : 'text-muted hover:text-warning'}`}
+                  >
+                    <Star className="w-3.5 h-3.5" fill={item.starred ? 'currentColor' : 'none'} />
+                  </button>
+                </div>
               </div>
               <h3 className="text-sm font-semibold text-text mb-2 line-clamp-1">{item.title}</h3>
               <p className="text-xs text-muted line-clamp-2 mb-3">{item.content}</p>
@@ -187,6 +228,80 @@ export default function Knowledge() {
         <div className="text-center py-16">
           <Brain className="w-12 h-12 text-muted/30 mx-auto mb-3" />
           <p className="text-sm text-muted">No knowledge items found</p>
+        </div>
+      )}
+
+      {/* Add Item Modal */}
+      {showAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowAdd(false)} />
+          <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-text">Add Knowledge Item</h2>
+              <button onClick={() => setShowAdd(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Title</label>
+                <input
+                  type="text"
+                  placeholder="e.g. CAP Theorem"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Content</label>
+                <textarea
+                  placeholder="What is it? Write the concept, fact or resource here..."
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                  rows={4}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Type</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['concept', 'fact', 'resource', 'insight'] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setNewType(t)}
+                      className={`px-2 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
+                        newType === t ? 'bg-primary/15 text-primary' : 'bg-elevated/50 text-muted hover:text-text'
+                      }`}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Tags (comma separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. distributed, systems"
+                  value={newTags}
+                  onChange={(e) => setNewTags(e.target.value)}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <button onClick={() => setShowAdd(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">Cancel</button>
+              <button
+                onClick={handleAdd}
+                disabled={!newTitle.trim() || !newContent.trim()}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Add Item
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

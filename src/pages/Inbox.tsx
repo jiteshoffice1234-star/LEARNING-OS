@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { store, usePersistentState } from '../lib/storage';
+import Modal from '../components/Modal';
+import { notes as seedNotes } from '../data/mockData';
 import { 
   Inbox as InboxIcon, Plus, Type, Image, FileText, Link2, Mic,
-  CheckCircle2, Clock, Archive, ChevronRight, X, Send, Tag
+  CheckCircle2, Clock, Archive, ChevronRight, Send, Tag
 } from 'lucide-react';
 
 interface Capture {
@@ -13,6 +16,40 @@ interface Capture {
   status: 'new' | 'reviewing' | 'organized' | 'archived';
   tags: string[];
   convertTo?: string;
+}
+
+/** Mirrors the Task shape in src/pages/Tasks.tsx — stored under 'tasks'. */
+interface TaskItem {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'todo' | 'in-progress' | 'done';
+  priority: 'low' | 'medium' | 'high';
+  dueDate?: string;
+  tags: string[];
+  linkedTo?: string;
+  createdAt: string;
+}
+
+/** Mirrors the Note shape in src/pages/Notes.tsx — stored under 'notes'. */
+interface NoteItem {
+  id: string;
+  title: string;
+  subject: string;
+  date: string;
+  tags: string[];
+}
+
+/** Mirrors the Goal shape in src/pages/Goals.tsx — stored under 'goals'. */
+interface GoalItem {
+  id: string;
+  title: string;
+  description: string;
+  type: 'learning' | 'skill' | 'career' | 'personal';
+  targetDate: string;
+  progress: number;
+  milestones: { title: string; completed: boolean }[];
+  status: 'on-track' | 'at-risk' | 'completed';
 }
 
 const initialCaptures: Capture[] = [
@@ -40,14 +77,50 @@ const statusConfig = {
   archived: { label: 'Archived', color: 'text-muted', bg: 'bg-elevated/50' },
 };
 
+const conversionTargets = ['Task', 'Note', 'Goal'] as const;
+type ConversionTarget = (typeof conversionTargets)[number];
+
+/**
+ * Append an item to a store that belongs to another page.
+ *
+ * Tasks / Goals / Notes seed their own demo data the first time they mount,
+ * so this page deliberately does NOT hold those keys with usePersistentState —
+ * merely opening the Inbox would write an empty array and wipe their seeds.
+ * We only write when a conversion actually happens, and prepend so the new
+ * item shows at the top of the target page (matching how those pages add items).
+ */
+function appendToStore<T>(key: string, item: T, seed: T[] = []) {
+  const existing = store.get<T[]>(key, seed);
+  store.set(key, [item, ...existing]);
+}
+
+/** Bucket an inbox capture into one of the Goal types from its tags. */
+function goalTypeFor(tags: string[]): GoalItem['type'] {
+  if (tags.some((t) => ['career', 'certification', 'job', 'resume'].includes(t))) return 'career';
+  if (tags.some((t) => ['skill', 'project', 'code', 'coding'].includes(t))) return 'skill';
+  if (tags.some((t) => ['personal', 'health', 'fitness', 'life'].includes(t))) return 'personal';
+  return 'learning';
+}
+
 export default function InboxPage() {
-  const [captures, setCaptures] = useState(initialCaptures);
+  const [captures, setCaptures] = usePersistentState<Capture[]>('captures', initialCaptures);
   const [filter, setFilter] = useState<'all' | 'new' | 'reviewing' | 'organized' | 'archived'>('all');
   const [showCaptureModal, setShowCaptureModal] = useState(false);
   const [selectedCapture, setSelectedCapture] = useState<Capture | null>(null);
   const [newCaptureType, setNewCaptureType] = useState<'text' | 'link'>('text');
   const [newCaptureContent, setNewCaptureContent] = useState('');
   const [newCaptureTitle, setNewCaptureTitle] = useState('');
+  const [convertMsg, setConvertMsg] = useState<string | null>(null);
+
+  // Show the confirmation briefly, then close the detail dialog.
+  useEffect(() => {
+    if (!convertMsg) return;
+    const timer = setTimeout(() => {
+      setConvertMsg(null);
+      setSelectedCapture(null);
+    }, 1600);
+    return () => clearTimeout(timer);
+  }, [convertMsg]);
 
   const filtered = filter === 'all' ? captures : captures.filter(c => c.status === filter);
   const newCount = captures.filter(c => c.status === 'new').length;
@@ -74,6 +147,60 @@ export default function InboxPage() {
     if (selectedCapture?.id === id) {
       setSelectedCapture({ ...selectedCapture, status });
     }
+  };
+
+  const closeDetail = () => {
+    setSelectedCapture(null);
+    setConvertMsg(null);
+  };
+
+  /** Create a real Task / Note / Goal from the open capture. */
+  const handleConvert = (target: ConversionTarget) => {
+    if (!selectedCapture || selectedCapture.convertTo) return;
+    const capture = selectedCapture;
+    const title = capture.title?.trim() || capture.content.slice(0, 60) || 'Untitled capture';
+    const today = new Date().toISOString().split('T')[0];
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+    if (target === 'Task') {
+      appendToStore<TaskItem>('tasks', {
+        id,
+        title,
+        description: capture.content,
+        status: 'todo',
+        priority: 'medium',
+        tags: [...capture.tags],
+        linkedTo: 'Inbox',
+        createdAt: today,
+      });
+    } else if (target === 'Note') {
+      // Seed with the Notes page demo data so it isn't wiped on a first write.
+      appendToStore<NoteItem>('notes', {
+        id,
+        title,
+        subject: capture.tags[0] || 'General',
+        date: today,
+        tags: [...capture.tags],
+      }, seedNotes);
+    } else {
+      appendToStore<GoalItem>('goals', {
+        id,
+        title,
+        description: capture.content || 'No description yet.',
+        type: goalTypeFor(capture.tags),
+        // Default to 90 days out (same convention as the Goals page).
+        targetDate: new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10),
+        progress: 0,
+        milestones: [],
+        status: 'on-track',
+      });
+    }
+
+    // Remember the conversion on the capture so it can't be converted twice.
+    const updated: Capture = { ...capture, convertTo: target };
+    setCaptures(captures.map(c => (c.id === capture.id ? updated : c)));
+    setSelectedCapture(updated);
+    setConvertMsg(`Added to ${target}s`);
   };
 
   return (
@@ -178,124 +305,77 @@ export default function InboxPage() {
       )}
 
       {/* Quick Capture Modal */}
-      {showCaptureModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setShowCaptureModal(false)} />
-          <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-text">Quick Capture</h2>
-              <button onClick={() => setShowCaptureModal(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Type Selector */}
-            <div className="flex items-center gap-2 mb-4">
-              {(['text', 'link'] as const).map((type) => {
-                const info = typeConfig[type];
-                const Icon = info.icon;
-                return (
-                  <button
-                    key={type}
-                    onClick={() => setNewCaptureType(type)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                      newCaptureType === type ? 'bg-primary/15 text-primary' : 'bg-elevated/50 text-muted hover:text-text'
-                    }`}
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                    {info.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="space-y-3">
-              <input
-                type="text"
-                placeholder="Title (optional)"
-                value={newCaptureTitle}
-                onChange={(e) => setNewCaptureTitle(e.target.value)}
-                className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
-              />
-              <textarea
-                placeholder={newCaptureType === 'link' ? 'Paste URL here...' : 'What\'s on your mind?'}
-                value={newCaptureContent}
-                onChange={(e) => setNewCaptureContent(e.target.value)}
-                rows={4}
-                className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary resize-none"
-                autoFocus
-              />
-            </div>
-
-            <div className="flex gap-2 mt-4">
-              <button onClick={() => setShowCaptureModal(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">
-                Cancel
-              </button>
-              <button 
-                onClick={handleAddCapture}
-                disabled={!newCaptureContent.trim()}
-                className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+      <Modal
+        open={showCaptureModal}
+        onClose={() => setShowCaptureModal(false)}
+        title="Quick Capture"
+        description="Save an idea, link or note to your inbox."
+        footer={
+          <>
+            <button
+              onClick={() => setShowCaptureModal(false)}
+              className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleAddCapture}
+              disabled={!newCaptureContent.trim()}
+              className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <Send className="w-3.5 h-3.5" />
+              Capture
+            </button>
+          </>
+        }
+      >
+        {/* Type Selector */}
+        <div className="flex items-center gap-2">
+          {(['text', 'link'] as const).map((type) => {
+            const info = typeConfig[type];
+            const Icon = info.icon;
+            return (
+              <button
+                key={type}
+                onClick={() => setNewCaptureType(type)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  newCaptureType === type ? 'bg-primary/15 text-primary' : 'bg-elevated/50 text-muted hover:text-text'
+                }`}
               >
-                <Send className="w-3.5 h-3.5" />
-                Capture
+                <Icon className="w-3.5 h-3.5" />
+                {info.label}
               </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
-      )}
+
+        <div className="space-y-3">
+          <input
+            type="text"
+            placeholder="Title (optional)"
+            value={newCaptureTitle}
+            onChange={(e) => setNewCaptureTitle(e.target.value)}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+          />
+          <textarea
+            placeholder={newCaptureType === 'link' ? 'Paste URL here...' : 'What\'s on your mind?'}
+            value={newCaptureContent}
+            onChange={(e) => setNewCaptureContent(e.target.value)}
+            rows={4}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary resize-none"
+          />
+        </div>
+      </Modal>
 
       {/* Capture Detail Modal */}
       {selectedCapture && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setSelectedCapture(null)} />
-          <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                {(() => { const Icon = typeConfig[selectedCapture.type].icon; return <Icon className={`w-5 h-5 ${typeConfig[selectedCapture.type].color}`} />; })()}
-                <h2 className="text-lg font-bold text-text">{selectedCapture.title}</h2>
-              </div>
-              <button onClick={() => setSelectedCapture(null)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="p-3 rounded-lg bg-elevated/50">
-                <p className="text-sm text-text">{selectedCapture.content}</p>
-              </div>
-
-              <div className="flex items-center gap-2 text-xs text-muted">
-                <Clock className="w-3 h-3" />
-                <span>{selectedCapture.timestamp}</span>
-                <span>•</span>
-                <span className={`px-1.5 py-0.5 rounded ${statusConfig[selectedCapture.status].bg} ${statusConfig[selectedCapture.status].color}`}>
-                  {statusConfig[selectedCapture.status].label}
-                </span>
-              </div>
-
-              {selectedCapture.tags.length > 0 && (
-                <div className="flex items-center gap-1 flex-wrap">
-                  <Tag className="w-3 h-3 text-muted" />
-                  {selectedCapture.tags.map(tag => (
-                    <span key={tag} className="text-xs px-2 py-0.5 rounded bg-elevated text-muted">#{tag}</span>
-                  ))}
-                </div>
-              )}
-
-              {/* Convert To */}
-              <div>
-                <p className="text-xs text-muted uppercase tracking-wider mb-2">Convert to</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {['Task', 'Note', 'Goal'].map(target => (
-                    <button key={target} className="px-3 py-2 rounded-lg bg-elevated/50 text-xs text-text hover:bg-primary/15 hover:text-primary transition-colors">
-                      {target}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2 mt-6">
+        <Modal
+          open
+          onClose={closeDetail}
+          title={selectedCapture.title || 'Capture'}
+          description={`${typeConfig[selectedCapture.type].label} capture · ${selectedCapture.timestamp}`}
+          footer={
+            <>
               {selectedCapture.status === 'new' && (
                 <button onClick={() => handleStatusChange(selectedCapture.id, 'reviewing')} className="flex-1 px-3 py-2 rounded-lg bg-warning/15 text-warning text-xs font-medium hover:bg-warning/25 transition-colors">
                   Start Review
@@ -309,9 +389,63 @@ export default function InboxPage() {
               <button onClick={() => handleStatusChange(selectedCapture.id, 'archived')} className="flex-1 px-3 py-2 rounded-lg bg-elevated text-muted text-xs font-medium hover:bg-elevated/80 transition-colors">
                 <Archive className="w-3 h-3 inline mr-1" /> Archive
               </button>
+            </>
+          }
+        >
+          <div className="p-3 rounded-lg bg-elevated/50">
+            <p className="text-sm text-text break-words">{selectedCapture.content}</p>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted">
+            <Clock className="w-3 h-3" />
+            <span>{selectedCapture.timestamp}</span>
+            <span>•</span>
+            <span className={`px-1.5 py-0.5 rounded ${statusConfig[selectedCapture.status].bg} ${statusConfig[selectedCapture.status].color}`}>
+              {statusConfig[selectedCapture.status].label}
+            </span>
+          </div>
+
+          {selectedCapture.tags.length > 0 && (
+            <div className="flex items-center gap-1 flex-wrap">
+              <Tag className="w-3 h-3 text-muted" />
+              {selectedCapture.tags.map(tag => (
+                <span key={tag} className="text-xs px-2 py-0.5 rounded bg-elevated text-muted">#{tag}</span>
+              ))}
+            </div>
+          )}
+
+          {/* Conversion confirmation */}
+          {convertMsg && (
+            <div role="status" className="flex items-center gap-2 p-2.5 rounded-lg bg-success/15 text-success text-xs font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+              {convertMsg} — open that page to see it.
+            </div>
+          )}
+
+          {selectedCapture.convertTo && !convertMsg && (
+            <p className="flex items-center gap-1.5 text-xs text-success">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Converted to {selectedCapture.convertTo}
+            </p>
+          )}
+
+          {/* Convert To */}
+          <div>
+            <p className="text-xs text-muted uppercase tracking-wider mb-2">Convert to</p>
+            <div className="grid grid-cols-3 gap-2">
+              {conversionTargets.map(target => (
+                <button
+                  key={target}
+                  onClick={() => handleConvert(target)}
+                  disabled={!!selectedCapture.convertTo || !!convertMsg}
+                  className="px-3 py-2 rounded-lg bg-elevated/50 text-xs text-text hover:bg-primary/15 hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {target}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

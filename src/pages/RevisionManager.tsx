@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { usePersistentState } from '../lib/storage';
+import { todayISO, addDaysISO } from '../lib/dates';
 import { 
   RotateCcw, Calendar, CheckCircle2, Clock, AlertTriangle, 
   Plus, ChevronRight, BookOpen, Filter, MoreHorizontal
@@ -28,10 +30,17 @@ const initialRevisions: Revision[] = [
 ];
 
 export default function RevisionManager() {
-  const [revisions, setRevisions] = useState(initialRevisions);
+  const [revisions, setRevisions] = usePersistentState<Revision[]>('revisions', initialRevisions);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
+
+  // New-revision form state
+  const [newSubject, setNewSubject] = useState('Algorithms');
+  const [newChapter, setNewChapter] = useState('');
+  const [newCycle, setNewCycle] = useState(1);
+  const [newInterval, setNewInterval] = useState(7);
+  const [newDueDate, setNewDueDate] = useState(todayISO());
 
   const filtered = revisions.filter(r => filter === 'all' || r.status === filter);
   
@@ -49,10 +58,38 @@ export default function RevisionManager() {
     setSelectedRevision(null);
   };
 
+  // Postpone by the revision's own interval instead of a hardcoded date.
   const handlePostpone = (id: string) => {
     setRevisions(revisions.map(r => 
-      r.id === id ? { ...r, status: 'postponed' as const, dueDate: '2026-11-15' } : r
+      r.id === id
+        ? { ...r, status: 'postponed' as const, dueDate: addDaysISO(todayISO(), r.interval || 7) }
+        : r
     ));
+  };
+
+  const handleDelete = (id: string) => {
+    setRevisions(revisions.filter(r => r.id !== id));
+    setSelectedRevision(null);
+  };
+
+  const handleCreate = () => {
+    if (!newChapter.trim()) return;
+    const revision: Revision = {
+      id: Date.now().toString(),
+      subject: newSubject,
+      chapter: newChapter.trim(),
+      cycle: newCycle,
+      interval: newInterval,
+      dueDate: newDueDate || todayISO(),
+      status: newDueDate && newDueDate < todayISO() ? 'overdue' : 'upcoming',
+    };
+    setRevisions([revision, ...revisions]);
+    // Reset form
+    setNewChapter('');
+    setNewCycle(1);
+    setNewInterval(7);
+    setNewDueDate(todayISO());
+    setShowAddModal(false);
   };
 
   return (
@@ -219,6 +256,12 @@ export default function RevisionManager() {
                   </button>
                 </>
               )}
+              <button 
+                onClick={() => handleDelete(selectedRevision.id)}
+                className="px-4 py-2.5 rounded-lg bg-danger/15 text-danger text-sm font-medium hover:bg-danger/25 transition-colors"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
@@ -236,35 +279,69 @@ export default function RevisionManager() {
             <div className="space-y-4">
               <div>
                 <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Subject</label>
-                <select className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary">
+                <select 
+                  value={newSubject}
+                  onChange={(e) => setNewSubject(e.target.value)}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
+                >
                   <option>Algorithms</option>
                   <option>Machine Learning</option>
                   <option>Database Systems</option>
                   <option>Operating Systems</option>
+                  <option>Computer Networks</option>
+                  <option>System Design</option>
+                  <option>Python</option>
                 </select>
               </div>
               <div>
                 <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Chapter</label>
-                <input type="text" placeholder="Enter chapter name" className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary" />
+                <input 
+                  type="text" 
+                  placeholder="Enter chapter name"
+                  value={newChapter}
+                  onChange={(e) => setNewChapter(e.target.value)}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary" 
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Cycle</label>
-                  <input type="number" defaultValue={1} min={1} className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary" />
+                  <input 
+                    type="number" 
+                    value={newCycle}
+                    onChange={(e) => setNewCycle(Math.max(1, Number(e.target.value) || 1))}
+                    min={1} 
+                    className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary" 
+                  />
                 </div>
                 <div>
                   <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Interval (days)</label>
-                  <input type="number" defaultValue={7} min={1} className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary" />
+                  <input 
+                    type="number" 
+                    value={newInterval}
+                    onChange={(e) => setNewInterval(Math.max(1, Number(e.target.value) || 1))}
+                    min={1} 
+                    className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary" 
+                  />
                 </div>
               </div>
               <div>
                 <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Due Date</label>
-                <input type="date" className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary" />
+                <input 
+                  type="date" 
+                  value={newDueDate}
+                  onChange={(e) => setNewDueDate(e.target.value)}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary" 
+                />
               </div>
             </div>
             <div className="flex gap-2 mt-6">
               <button onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">Cancel</button>
-              <button onClick={() => setShowAddModal(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">Create</button>
+              <button 
+                onClick={handleCreate}
+                disabled={!newChapter.trim()}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >Create</button>
             </div>
           </div>
         </div>

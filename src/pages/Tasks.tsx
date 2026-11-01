@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePersistentState } from '../lib/storage';
 import { 
   CheckSquare, Plus, CheckCircle2, Circle, Clock, AlertTriangle, 
   Calendar, Flag, X, Tag, Filter
@@ -34,11 +35,12 @@ const priorityConfig = {
 };
 
 export default function Tasks() {
-  const [tasks, setTasks] = useState(initialTasks);
+  const [tasks, setTasks] = usePersistentState<Task[]>('tasks', initialTasks);
   const [filter, setFilter] = useState<'all' | 'todo' | 'in-progress' | 'done'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [newTaskDue, setNewTaskDue] = useState('');
 
   const filtered = filter === 'all' ? tasks : tasks.filter(t => t.status === filter);
   
@@ -56,10 +58,13 @@ export default function Tasks() {
       status: 'todo',
       priority: newTaskPriority,
       tags: [],
+      dueDate: newTaskDue || undefined,
       createdAt: new Date().toISOString().split('T')[0],
     };
     setTasks([newTask, ...tasks]);
     setNewTaskTitle('');
+    setNewTaskDue('');
+    setNewTaskPriority('medium');
     setShowAddModal(false);
   };
 
@@ -236,7 +241,12 @@ export default function Tasks() {
 
               <div>
                 <label className="text-xs text-muted uppercase tracking-wider mb-2 block">Due Date</label>
-                <input type="date" className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary" />
+                <input 
+                  type="date" 
+                  value={newTaskDue}
+                  onChange={(e) => setNewTaskDue(e.target.value)}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary" 
+                />
               </div>
             </div>
 

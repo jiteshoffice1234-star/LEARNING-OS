@@ -1,57 +1,121 @@
 import { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Square, RotateCcw, Clock, BookOpen, Zap } from 'lucide-react';
-import { studySessions } from '../data/mockData';
+import { usePersistentState } from '../lib/storage';
+import { todayISO } from '../lib/dates';
+
+interface Session {
+  id: string;
+  subject: string;
+  date: string;
+  /** Duration in minutes. */
+  duration: number;
+  type: 'deep' | 'revision';
+}
+
+/** Seed with the original demo history so the first run isn't empty. */
+const initialSessions: Session[] = [
+  { id: 's1', subject: 'Algorithms & Data Structures', date: '2026-10-31', duration: 120, type: 'deep' },
+  { id: 's2', subject: 'Machine Learning', date: '2026-10-31', duration: 90, type: 'deep' },
+  { id: 's3', subject: 'Operating Systems', date: '2026-10-30', duration: 60, type: 'revision' },
+  { id: 's4', subject: 'Database Systems', date: '2026-10-30', duration: 150, type: 'deep' },
+];
+
+/** Persisted timer state so a running session survives a page refresh. */
+interface TimerState {
+  isRunning: boolean;
+  isPaused: boolean;
+  /** Epoch ms when the current run segment started. */
+  startTime: number | null;
+  /** Accumulated seconds from previous segments (before pause/restart). */
+  baseElapsed: number;
+  subject: string;
+}
+
+const initialTimer: TimerState = {
+  isRunning: false,
+  isPaused: false,
+  startTime: null,
+  baseElapsed: 0,
+  subject: 'Algorithms & Data Structures',
+};
 
 export default function StudyTimer() {
-  const [isRunning, setIsRunning] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const [sessions, setSessions] = usePersistentState<Session[]>('studySessions', initialSessions);
+  const [timer, setTimer] = usePersistentState<TimerState>('studyTimer', initialTimer);
   const [elapsed, setElapsed] = useState(0);
-  const [selectedSubject, setSelectedSubject] = useState('Algorithms & Data Structures');
-  const startTimeRef = useRef<number | null>(null);
-  const pausedTimeRef = useRef<number>(0);
+  const mountedRef = useRef(true);
+
+  // Recompute elapsed from the persisted timer on mount (handles refresh).
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isRunning && !isPaused) {
+    const compute = () => {
+      if (timer.isRunning && !timer.isPaused && timer.startTime) {
+        return timer.baseElapsed + Math.floor((Date.now() - timer.startTime) / 1000);
+      }
+      return timer.baseElapsed;
+    };
+    setElapsed(compute());
+
+    let interval: ReturnType<typeof setInterval> | undefined;
+    if (timer.isRunning && !timer.isPaused) {
       interval = setInterval(() => {
-        setElapsed(Math.floor((Date.now() - (startTimeRef.current || Date.now()) - pausedTimeRef.current) / 1000));
+        if (mountedRef.current) setElapsed(compute());
       }, 1000);
     }
-    return () => clearInterval(interval);
-  }, [isRunning, isPaused]);
+    return () => { if (interval) clearInterval(interval); };
+  }, [timer.isRunning, timer.isPaused, timer.startTime, timer.baseElapsed]);
 
   const handleStart = () => {
-    if (!isRunning) {
-      startTimeRef.current = Date.now();
-      pausedTimeRef.current = 0;
-      setElapsed(0);
-      setIsRunning(true);
-      setIsPaused(false);
-    }
+    setTimer({ ...timer, isRunning: true, isPaused: false, startTime: Date.now(), baseElapsed: 0 });
   };
 
   const handlePause = () => {
-    if (isRunning && !isPaused) {
-      setIsPaused(true);
+    if (timer.isRunning && !timer.isPaused) {
+      const nowElapsed = timer.baseElapsed + Math.floor((Date.now() - (timer.startTime ?? Date.now())) / 1000);
+      setTimer({ ...timer, isPaused: true, baseElapsed: nowElapsed, startTime: null });
     }
   };
 
   const handleResume = () => {
-    if (isRunning && isPaused) {
-      setIsPaused(false);
+    if (timer.isRunning && timer.isPaused) {
+      setTimer({ ...timer, isPaused: false, startTime: Date.now() });
+    }
+  };
+
+  /** Save the session to history if it ran ≥ 1 minute, then reset. */
+  const saveSession = () => {
+    const totalSeconds = timer.isRunning && !timer.isPaused && timer.startTime
+      ? timer.baseElapsed + Math.floor((Date.now() - timer.startTime) / 1000)
+      : timer.baseElapsed;
+    const minutes = Math.round(totalSeconds / 60);
+    if (minutes >= 1) {
+      setSessions([
+        {
+          id: Date.now().toString(),
+          subject: timer.subject,
+          date: todayISO(),
+          duration: minutes,
+          type: 'deep',
+        },
+        ...sessions,
+      ]);
     }
   };
 
   const handleStop = () => {
-    setIsRunning(false);
-    setIsPaused(false);
+    saveSession();
+    setTimer({ ...initialTimer, subject: timer.subject });
     setElapsed(0);
   };
 
   const handleReset = () => {
-    handleStop();
-    startTimeRef.current = null;
-    pausedTimeRef.current = 0;
+    // Reset discards the in-progress session without saving.
+    setTimer({ ...initialTimer, subject: timer.subject });
+    setElapsed(0);
   };
 
   const formatTime = (seconds: number) => {
@@ -61,9 +125,9 @@ export default function StudyTimer() {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const todayTotal = studySessions
-    .filter(s => s.date === '2026-10-31')
-    .reduce((acc, s) => acc + s.duration, 0);
+  const today = todayISO();
+  const todaySessions = sessions.filter(s => s.date === today);
+  const todayTotal = todaySessions.reduce((acc, s) => acc + s.duration, 0);
 
   return (
     <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
@@ -80,9 +144,10 @@ export default function StudyTimer() {
           <div className="mb-5">
             <label className="text-[10px] text-muted uppercase tracking-wider mb-1.5 block">Current Subject</label>
             <select 
-              value={selectedSubject}
-              onChange={(e) => setSelectedSubject(e.target.value)}
-              className="bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary transition-colors"
+              value={timer.subject}
+              onChange={(e) => setTimer({ ...timer, subject: e.target.value })}
+              disabled={timer.isRunning && !timer.isPaused}
+              className="bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary transition-colors disabled:opacity-60"
             >
               <option>Algorithms & Data Structures</option>
               <option>Machine Learning</option>
@@ -120,7 +185,7 @@ export default function StudyTimer() {
                   {formatTime(elapsed)}
                 </span>
                 <span className="text-[10px] text-muted mt-1.5 uppercase tracking-wider">
-                  {isRunning ? (isPaused ? 'Paused' : 'In Progress') : 'Ready'}
+                  {timer.isRunning ? (timer.isPaused ? 'Paused' : 'In Progress') : 'Ready'}
                 </span>
               </div>
             </div>
@@ -128,7 +193,7 @@ export default function StudyTimer() {
 
           {/* Controls */}
           <div className="flex items-center justify-center gap-3">
-            {!isRunning ? (
+            {!timer.isRunning ? (
               <button 
                 onClick={handleStart}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/25"
@@ -144,7 +209,7 @@ export default function StudyTimer() {
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
-                {isPaused ? (
+                {timer.isPaused ? (
                   <button 
                     onClick={handleResume}
                     className="flex items-center gap-1.5 px-5 py-2 rounded-lg bg-success text-white font-medium text-sm hover:bg-success/90 transition-all"
@@ -179,12 +244,12 @@ export default function StudyTimer() {
             <p className="text-[10px] text-muted">Today</p>
           </div>
           <div className="glass-card rounded-lg p-2.5 text-center">
-            <p className="text-sm font-bold text-text">3</p>
+            <p className="text-sm font-bold text-text">{todaySessions.length}</p>
             <p className="text-[10px] text-muted">Sessions</p>
           </div>
           <div className="glass-card rounded-lg p-2.5 text-center">
-            <p className="text-sm font-bold text-text">92%</p>
-            <p className="text-[10px] text-muted">Focus</p>
+            <p className="text-sm font-bold text-text">{Math.floor(todayTotal / 60)}h</p>
+            <p className="text-[10px] text-muted">Logged</p>
           </div>
         </div>
 
@@ -192,7 +257,10 @@ export default function StudyTimer() {
         <div className="glass-card rounded-xl p-3">
           <h3 className="text-xs font-semibold text-text mb-2">Recent Sessions</h3>
           <div className="space-y-1">
-            {studySessions.slice(0, 6).map((session) => (
+            {sessions.length === 0 && (
+              <p className="text-xs text-muted text-center py-6">No sessions yet. Start a timer to log one.</p>
+            )}
+            {sessions.slice(0, 8).map((session) => (
               <div key={session.id} className="flex items-center gap-2 p-2 rounded-md bg-elevated/30 hover:bg-elevated/50 transition-colors">
                 <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${
                   session.type === 'deep' ? 'bg-primary/15' : 'bg-accent/15'

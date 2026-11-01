@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Target, ArrowRight, ArrowLeft, Sparkles, BookOpen, GraduationCap, Briefcase, Clock, Check } from 'lucide-react';
+import { usePersistentState } from '../lib/storage';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -65,6 +66,21 @@ const steps = [
 export default function Welcome({ onComplete }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  // Merge onboarding answers into the persisted profile so they actually stick.
+  const [profile, setProfile] = usePersistentState('profile', {
+    name: 'Learner',
+    education: 'Undergraduate',
+    focus: 'Computer Science',
+    situation: 'Student',
+    goal: 'Skill Mastery',
+    dailyTime: '4 hours',
+    institution: '',
+    qualification: '',
+    country: '',
+    language: 'English',
+    introduction: '',
+    careerObjective: '',
+  });
 
   const step = steps[currentStep];
   const Icon = step.icon;
@@ -74,6 +90,22 @@ export default function Welcome({ onComplete }: OnboardingProps) {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
+      // Persist the collected answers into the profile before finishing.
+      setProfile({
+        ...profile,
+        name: answers.name || profile.name,
+        education: answers.education || profile.education,
+        focus: answers.focus || profile.focus,
+        situation: answers.situation || profile.situation,
+        goal: answers.goal || profile.goal,
+        dailyTime: answers.time || profile.dailyTime,
+      });
+      // Mark onboarding complete so it doesn't show again.
+      try {
+        localStorage.setItem('learningos:v1:onboardingComplete', JSON.stringify(true));
+      } catch {
+        /* ignore */
+      }
       onComplete();
     }
   };

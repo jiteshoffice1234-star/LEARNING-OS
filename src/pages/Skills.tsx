@@ -1,20 +1,87 @@
 import { useState } from 'react';
-import { Brain, Plus, TrendingUp, Clock, Target, Award } from 'lucide-react';
+import { usePersistentState } from '../lib/storage';
+import Modal, { ModalActions } from '../components/Modal';
+import { Brain, Plus, TrendingUp, Clock, Target, Award, Trash2 } from 'lucide-react';
 import { skills, skillCategories, roadmapItems } from '../data/mockData';
 
 const levelLabels = ['Not Started', 'Beginner', 'Basic', 'Intermediate', 'Advanced', 'Expert'];
 const levelColors = ['#4A4E5A', '#E16F79', '#E5AA55', '#A99BFF', '#8170ED', '#43B889'];
 
+interface Skill {
+  id: string;
+  name: string;
+  category: string;
+  level: number;
+  targetLevel: number;
+  hours: number;
+  startDate: string;
+  status: string;
+}
+
+const skillStatuses = ['planned', 'learning', 'mastered'] as const;
+
 export default function Skills() {
+  const [skillList, setSkillList] = usePersistentState<Skill[]>('skills', skills);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
 
+  // --- Add Skill form state ---
+  const [showAdd, setShowAdd] = useState(false);
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState<string>(skillCategories[0]);
+  const [level, setLevel] = useState(0);
+  const [targetLevel, setTargetLevel] = useState(3);
+  const [hours, setHours] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [status, setStatus] = useState<string>('learning');
+
   const filteredSkills = selectedCategory === 'All' 
-    ? skills 
-    : skills.filter(s => s.category === selectedCategory);
+    ? skillList 
+    : skillList.filter(s => s.category === selectedCategory);
+
+  const resetForm = () => {
+    setName('');
+    setCategory(skillCategories[0]);
+    setLevel(0);
+    setTargetLevel(3);
+    setHours('');
+    setStartDate('');
+    setStatus('learning');
+  };
+
+  const handleAddSkill = () => {
+    if (!name.trim()) return;
+    const skill: Skill = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: name.trim(),
+      category,
+      level: Math.min(Math.max(level, 0), 5),
+      targetLevel: Math.min(Math.max(targetLevel, 0), 5),
+      hours: Number(hours) || 0,
+      startDate: startDate || new Date().toISOString().slice(0, 7),
+      status,
+    };
+    setSkillList([...skillList, skill]);
+    resetForm();
+    setShowAdd(false);
+  };
+
+  const handleDelete = (id: string) => {
+    setSkillList(skillList.filter((s) => s.id !== id));
+    if (selectedSkill === id) setSelectedSkill(null);
+  };
+
+  /** Nudge a skill's proficiency up or down, clamped to the 0–5 scale. */
+  const adjustLevel = (id: string, delta: number) => {
+    setSkillList(
+      skillList.map((s) =>
+        s.id === id ? { ...s, level: Math.min(Math.max(s.level + delta, 0), 5) } : s
+      )
+    );
+  };
 
   if (selectedSkill) {
-    const skill = skills.find(s => s.id === selectedSkill);
+    const skill = skillList.find(s => s.id === selectedSkill);
     const relatedRoadmap = roadmapItems.filter(r => r.skill === skill?.name);
     
     return (
@@ -32,16 +99,48 @@ export default function Skills() {
               <h2 className="text-xl font-bold text-text">{skill?.name}</h2>
               <p className="text-sm text-muted mt-1">{skill?.category} • Started {skill?.startDate}</p>
             </div>
-            <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: `${levelColors[skill?.level || 0]}20`, color: levelColors[skill?.level || 0] }}>
-              {levelLabels[skill?.level || 0]}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: `${levelColors[skill?.level || 0]}20`, color: levelColors[skill?.level || 0] }}>
+                {levelLabels[skill?.level || 0]}
+              </span>
+              <button
+                type="button"
+                onClick={() => skill && handleDelete(skill.id)}
+                aria-label={`Delete skill: ${skill?.name ?? ''}`}
+                className="p-2 rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Proficiency Bar */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 gap-2">
               <span className="text-sm text-muted">Proficiency</span>
-              <span className="text-sm text-text">{skill?.level}/5 → Target: {skill?.targetLevel}/5</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-text">{skill?.level}/5 → Target: {skill?.targetLevel}/5</span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => skill && adjustLevel(skill.id, -1)}
+                    disabled={!skill || skill.level <= 0}
+                    aria-label="Decrease level"
+                    className="w-6 h-6 rounded-md bg-elevated text-text text-xs font-bold hover:bg-elevated/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => skill && adjustLevel(skill.id, 1)}
+                    disabled={!skill || skill.level >= 5}
+                    aria-label="Increase level"
+                    className="w-6 h-6 rounded-md bg-elevated text-text text-xs font-bold hover:bg-elevated/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="relative h-3 bg-elevated rounded-full overflow-hidden">
               <div 
@@ -128,9 +227,12 @@ export default function Skills() {
       <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-xl font-bold text-text">Skills</h1>
-          <p className="text-xs text-muted">{skills.length} skills · {skills.reduce((acc, s) => acc + s.hours, 0)}h total</p>
+          <p className="text-xs text-muted">{skillList.length} skills · {skillList.reduce((acc, s) => acc + s.hours, 0)}h total</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors">
+        <button 
+          onClick={() => setShowAdd(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 transition-colors"
+        >
           <Plus className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Add Skill</span>
         </button>
@@ -139,15 +241,15 @@ export default function Skills() {
       {/* Overview Stats */}
       <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
         <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[11px] text-text font-medium">{skills.length}</span>
+          <span className="text-[11px] text-text font-medium">{skillList.length}</span>
           <span className="text-[10px] text-muted">Total</span>
         </div>
         <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[11px] text-success font-medium">{skills.filter(s => s.status === 'learning').length}</span>
+          <span className="text-[11px] text-success font-medium">{skillList.filter(s => s.status === 'learning').length}</span>
           <span className="text-[10px] text-muted">Active</span>
         </div>
         <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[11px] text-warning font-medium">{skills.filter(s => s.level >= 4).length}</span>
+          <span className="text-[11px] text-warning font-medium">{skillList.filter(s => s.level >= 4).length}</span>
           <span className="text-[10px] text-muted">Advanced</span>
         </div>
       </div>
@@ -191,8 +293,16 @@ export default function Skills() {
                 <h3 className="text-xs font-semibold text-text truncate">{skill.name}</h3>
                 <p className="text-[9px] text-muted">{skill.category}</p>
               </div>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); handleDelete(skill.id); }}
+                aria-label={`Delete skill: ${skill.name}`}
+                className="p-1 rounded text-muted hover:text-danger hover:bg-danger/10 transition-colors flex-shrink-0"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
-            
+             
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] text-muted">L{skill.level}</span>
               <span className="text-[10px] font-medium" style={{ color: levelColors[skill.level] }}>
@@ -205,7 +315,7 @@ export default function Skills() {
                 style={{ width: `${(skill.level / 5) * 100}%`, backgroundColor: levelColors[skill.level] }}
               />
             </div>
-            
+             
             <div className="flex items-center justify-between text-[10px] text-muted">
               <span>{skill.hours}h</span>
               <span>→ {levelLabels[skill.targetLevel]}</span>
@@ -213,6 +323,115 @@ export default function Skills() {
           </div>
         ))}
       </div>
+
+      {filteredSkills.length === 0 && (
+        <div className="text-center py-12">
+          <Brain className="w-10 h-10 text-muted/30 mx-auto mb-3" />
+          <p className="text-sm text-muted">No skills in this category</p>
+        </div>
+      )}
+
+      {/* Add Skill dialog */}
+      <Modal
+        open={showAdd}
+        onClose={() => { setShowAdd(false); resetForm(); }}
+        title="Add Skill"
+        description="Track a skill you're learning or want to improve."
+        footer={
+          <ModalActions
+            onCancel={() => { setShowAdd(false); resetForm(); }}
+            onSubmit={handleAddSkill}
+            submitLabel="Add Skill"
+            submitDisabled={!name.trim()}
+          />
+        }
+      >
+        <div>
+          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Name *</label>
+          <input
+            type="text"
+            placeholder="e.g. Machine Learning"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddSkill()}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Category</label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary"
+          >
+            {skillCategories.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Level (0–5)</label>
+            <input
+              type="number"
+              min={0}
+              max={5}
+              value={level}
+              onChange={(e) => setLevel(Number(e.target.value))}
+              className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Target Level (0–5)</label>
+            <input
+              type="number"
+              min={0}
+              max={5}
+              value={targetLevel}
+              onChange={(e) => setTargetLevel(Number(e.target.value))}
+              className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Hours</label>
+            <input
+              type="number"
+              min={0}
+              placeholder="e.g. 40"
+              value={hours}
+              onChange={(e) => setHours(e.target.value)}
+              className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Start Date</label>
+            <input
+              type="month"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Status</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text capitalize focus:outline-none focus:border-primary"
+          >
+            {skillStatuses.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+      </Modal>
     </div>
   );
 }

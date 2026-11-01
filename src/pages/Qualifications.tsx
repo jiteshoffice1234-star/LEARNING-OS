@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { usePersistentState } from '../lib/storage';
+import Modal, { ModalActions } from '../components/Modal';
 import { 
   GraduationCap, Plus, Award, BookOpen, Clock, CheckCircle2,
-  Pause, XCircle, ChevronRight, Calendar, Building2
+  Pause, XCircle, ChevronRight, Calendar, Building2, Trash2
 } from 'lucide-react';
 import { qualifications } from '../data/mockData';
 
@@ -16,7 +18,7 @@ interface Qualification {
   papers?: { name: string; marks?: string; grade?: string }[];
 }
 
-const allQualifications: Qualification[] = [
+const initialQualifications: Qualification[] = [
   ...qualifications.map(q => ({ 
     ...q, 
     status: q.status as Qualification['status'],
@@ -36,19 +38,58 @@ const statusConfig: Record<string, { icon: React.ElementType; color: string; bg:
   discontinued: { icon: XCircle, color: 'text-danger', bg: 'bg-danger/15' },
 };
 
+const statusLabels: Qualification['status'][] = ['planned', 'pursuing', 'completed', 'paused', 'discontinued'];
+
 export default function Qualifications() {
+  const [quals, setQuals] = usePersistentState<Qualification[]>('qualifications', initialQualifications);
   const [filter, setFilter] = useState<'all' | 'academic' | 'professional'>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedQual, setSelectedQual] = useState<Qualification | null>(null);
 
-  const filtered = allQualifications.filter(q => {
+  // --- Add Qualification form state ---
+  const [showAdd, setShowAdd] = useState(false);
+  const [name, setName] = useState('');
+  const [institution, setInstitution] = useState('');
+  const [status, setStatus] = useState<Qualification['status']>('planned');
+  const [year, setYear] = useState('');
+  const [grade, setGrade] = useState('');
+  const [type, setType] = useState<Qualification['type']>('academic');
+
+  const filtered = quals.filter(q => {
     const matchType = filter === 'all' || q.type === filter;
     const matchStatus = statusFilter === 'all' || q.status === statusFilter;
     return matchType && matchStatus;
   });
 
-  const academic = allQualifications.filter(q => q.type === 'academic');
-  const professional = allQualifications.filter(q => q.type === 'professional');
+  const resetForm = () => {
+    setName('');
+    setInstitution('');
+    setStatus('planned');
+    setYear('');
+    setGrade('');
+    setType('academic');
+  };
+
+  const handleAddQualification = () => {
+    if (!name.trim() || !institution.trim()) return;
+    const qual: Qualification = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      name: name.trim(),
+      institution: institution.trim(),
+      status,
+      year: year.trim() || new Date().getFullYear().toString(),
+      grade: grade.trim() || '-',
+      type,
+    };
+    setQuals([...quals, qual]);
+    resetForm();
+    setShowAdd(false);
+  };
+
+  const handleDelete = (id: string) => {
+    setQuals(quals.filter((q) => q.id !== id));
+    setSelectedQual((prev) => (prev?.id === id ? null : prev));
+  };
 
   return (
     <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
@@ -58,7 +99,10 @@ export default function Qualifications() {
           <h1 className="text-2xl font-bold text-text">Qualifications</h1>
           <p className="text-sm text-muted mt-1">Your academic and professional credentials</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
+        <button 
+          onClick={() => setShowAdd(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Add</span>
         </button>
@@ -67,19 +111,19 @@ export default function Qualifications() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-text">{allQualifications.length}</p>
+          <p className="text-2xl font-bold text-text">{quals.length}</p>
           <p className="text-xs text-muted">Total</p>
         </div>
         <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-success">{allQualifications.filter(q => q.status === 'completed').length}</p>
+          <p className="text-2xl font-bold text-success">{quals.filter(q => q.status === 'completed').length}</p>
           <p className="text-xs text-muted">Completed</p>
         </div>
         <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-primary">{allQualifications.filter(q => q.status === 'pursuing').length}</p>
+          <p className="text-2xl font-bold text-primary">{quals.filter(q => q.status === 'pursuing').length}</p>
           <p className="text-xs text-muted">Pursuing</p>
         </div>
         <div className="glass-card rounded-xl p-4">
-          <p className="text-2xl font-bold text-warning">{allQualifications.filter(q => q.status === 'planned').length}</p>
+          <p className="text-2xl font-bold text-warning">{quals.filter(q => q.status === 'planned').length}</p>
           <p className="text-xs text-muted">Planned</p>
         </div>
       </div>
@@ -154,12 +198,121 @@ export default function Qualifications() {
                   </div>
                 </div>
 
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); handleDelete(qual.id); }}
+                  aria-label={`Delete qualification: ${qual.name}`}
+                  className="p-1.5 rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors flex-shrink-0"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+
                 <ChevronRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
               </div>
             </div>
           );
         })}
       </div>
+
+      {filtered.length === 0 && (
+        <div className="text-center py-16">
+          <GraduationCap className="w-12 h-12 text-muted/30 mx-auto mb-3" />
+          <p className="text-sm text-muted">No qualifications match these filters</p>
+        </div>
+      )}
+
+      {/* New Qualification dialog */}
+      <Modal
+        open={showAdd}
+        onClose={() => { setShowAdd(false); resetForm(); }}
+        title="Add Qualification"
+        description="Add an academic or professional credential to your record."
+        footer={
+          <ModalActions
+            onCancel={() => { setShowAdd(false); resetForm(); }}
+            onSubmit={handleAddQualification}
+            submitLabel="Add Qualification"
+            submitDisabled={!name.trim() || !institution.trim()}
+          />
+        }
+      >
+        <div>
+          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Name *</label>
+          <input
+            type="text"
+            placeholder="e.g. AWS Solutions Architect"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddQualification()}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Institution *</label>
+          <input
+            type="text"
+            placeholder="e.g. IIT Delhi"
+            value={institution}
+            onChange={(e) => setInstitution(e.target.value)}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Year</label>
+            <input
+              type="text"
+              placeholder="e.g. 2026 or 2022-2026"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Grade</label>
+            <input
+              type="text"
+              placeholder="e.g. 8.5 CGPA"
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Status</label>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as Qualification['status'])}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text capitalize focus:outline-none focus:border-primary"
+          >
+            {statusLabels.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="text-xs text-muted uppercase tracking-wider mb-2 block">Type</label>
+          <div className="grid grid-cols-2 gap-2">
+            {(['academic', 'professional'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setType(t)}
+                className={`px-3 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
+                  type === t ? 'bg-primary text-white' : 'bg-elevated text-text hover:bg-elevated/80 border border-border/50'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      </Modal>
 
       {/* Detail Modal */}
       {selectedQual && (

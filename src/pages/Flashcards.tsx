@@ -3,15 +3,29 @@ import {
   Lightbulb, Plus, RotateCw, ChevronRight, CheckCircle2, 
   Clock, BookOpen, X, ArrowRight, ArrowLeft, Shuffle
 } from 'lucide-react';
+import { usePersistentState } from '../lib/storage';
+import { scheduleCard, isDue, todayISO } from '../lib/srs';
 
 interface Flashcard {
   id: string;
   question: string;
   answer: string;
+  /** Display label derived from `ease`. Kept in sync by `scheduleCard`. */
   difficulty: 'easy' | 'medium' | 'hard';
+  /** SM-2 ease factor (1.3–2.5). Present on cards studied after the SRS update. */
+  ease?: number;
+  /** Current spacing interval in days. Drives the next interval after each review. */
+  interval?: number;
   lastReviewed?: string;
   nextReview?: string;
   reviewCount: number;
+}
+
+/** Legacy cards only had a string label — seed a sensible ease from it. */
+function easeFromLabel(label: 'easy' | 'medium' | 'hard'): number {
+  if (label === 'easy') return 2.5;
+  if (label === 'medium') return 2.0;
+  return 1.5;
 }
 
 interface Deck {
@@ -62,15 +76,24 @@ const initialDecks: Deck[] = [
 ];
 
 export default function Flashcards() {
-  const [decks, setDecks] = useState(initialDecks);
+  const [decks, setDecks] = usePersistentState<Deck[]>('decks', initialDecks);
   const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
   const [studyMode, setStudyMode] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [studiedCards, setStudiedCards] = useState<string[]>([]);
+  const [showNewDeck, setShowNewDeck] = useState(false);
+  const [newDeckName, setNewDeckName] = useState('');
+  const [newDeckSubject, setNewDeckSubject] = useState('');
 
+  const today = todayISO();
   const totalCards = decks.reduce((acc, d) => acc + d.cards.length, 0);
-  const dueCards = decks.reduce((acc, d) => acc + d.cards.filter(c => c.nextReview && new Date(c.nextReview) <= new Date('2026-10-31')).length, 0);
+  const dueCards = decks.reduce((acc, d) => acc + d.cards.filter(c => isDue(c)).length, 0);
+
+  // Keep the open deck in sync with persisted edits (e.g. after rating a card).
+  const liveSelectedDeck = selectedDeck
+    ? decks.find(d => d.id === selectedDeck.id) ?? selectedDeck
+    : null;
 
   const handleStartStudy = (deck: Deck) => {
     setSelectedDeck(deck);
@@ -81,13 +104,23 @@ export default function Flashcards() {
   };
 
   const handleNextCard = () => {
-    if (!selectedDeck) return;
-    if (currentCardIndex < selectedDeck.cards.length - 1) {
+    if (!liveSelectedDeck) return;
+    if (currentCardIndex < liveSelectedDeck.cards.length - 1) {
       setCurrentCardIndex(currentCardIndex + 1);
       setShowAnswer(false);
     } else {
-      setStudyMode(false);
+      // Reached the end — save the deck's last-studied date and exit.
+      finishSession();
     }
+  };
+
+  const finishSession = () => {
+    if (liveSelectedDeck) {
+      setDecks(decks.map(d =>
+        d.id === liveSelectedDeck.id ? { ...d, lastStudied: today } : d
+      ));
+    }
+    setStudyMode(false);
   };
 
   const handlePrevCard = () => {
@@ -97,16 +130,65 @@ export default function Flashcards() {
     }
   };
 
+  /** Apply the SM-2 schedule for the rating, persist it, then advance. */
   const handleRateCard = (rating: 'hard' | 'medium' | 'easy') => {
-    if (!selectedDeck) return;
-    const card = selectedDeck.cards[currentCardIndex];
-    setStudiedCards([...studiedCards, card.id]);
+    if (!liveSelectedDeck) return;
+    const card = liveSelectedDeck.cards[currentCardIndex];
+    const updated = scheduleCard(
+      {
+        difficulty: card.ease ?? easeFromLabel(card.difficulty),
+        interval: card.interval ?? 0,
+        reviewCount: card.reviewCount,
+        lastReviewed: card.lastReviewed,
+        nextReview: card.nextReview,
+      },
+      rating
+    );
+    const newDecks = decks.map(d => {
+      if (d.id !== liveSelectedDeck.id) return d;
+      return {
+        ...d,
+        cards: d.cards.map(c =>
+          c.id === card.id
+            ? {
+                ...c,
+                ease: updated.difficulty,
+                interval: updated.interval,
+                difficulty: (updated.difficulty >= 2.2 ? 'easy' : updated.difficulty >= 1.8 ? 'medium' : 'hard') as Flashcard['difficulty'],
+                reviewCount: updated.reviewCount,
+                lastReviewed: updated.lastReviewed,
+                nextReview: updated.nextReview,
+              }
+            : c
+        ),
+      };
+    });
+    setDecks(newDecks);
+    if (!studiedCards.includes(card.id)) {
+      setStudiedCards([...studiedCards, card.id]);
+    }
     handleNextCard();
   };
 
-  if (studyMode && selectedDeck) {
-    const card = selectedDeck.cards[currentCardIndex];
-    const progress = ((currentCardIndex + 1) / selectedDeck.cards.length) * 100;
+  const handleCreateDeck = () => {
+    if (!newDeckName.trim()) return;
+    const colors = ['#8170ED', '#43B889', '#E5AA55', '#E16F79', '#A99BFF'];
+    const deck: Deck = {
+      id: Date.now().toString(),
+      name: newDeckName.trim(),
+      subject: newDeckSubject.trim() || 'General',
+      color: colors[decks.length % colors.length],
+      cards: [],
+    };
+    setDecks([...decks, deck]);
+    setNewDeckName('');
+    setNewDeckSubject('');
+    setShowNewDeck(false);
+  };
+
+  if (studyMode && liveSelectedDeck) {
+    const card = liveSelectedDeck.cards[currentCardIndex];
+    const progress = ((currentCardIndex + 1) / liveSelectedDeck.cards.length) * 100;
 
     return (
       <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
@@ -114,11 +196,11 @@ export default function Flashcards() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-lg font-bold text-text">{selectedDeck.name}</h2>
-              <p className="text-xs text-muted">Card {currentCardIndex + 1} of {selectedDeck.cards.length}</p>
+              <h2 className="text-lg font-bold text-text">{liveSelectedDeck.name}</h2>
+              <p className="text-xs text-muted">Card {currentCardIndex + 1} of {liveSelectedDeck.cards.length}</p>
             </div>
             <button 
-              onClick={() => setStudyMode(false)}
+              onClick={finishSession}
               className="p-2 rounded-lg hover:bg-elevated text-muted"
             >
               <X className="w-5 h-5" />
@@ -191,7 +273,7 @@ export default function Flashcards() {
 
             <button 
               onClick={handleNextCard}
-              disabled={currentCardIndex === selectedDeck.cards.length - 1}
+              disabled={currentCardIndex === liveSelectedDeck.cards.length - 1}
               className="p-3 rounded-lg bg-elevated text-muted hover:text-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ArrowRight className="w-5 h-5" />
@@ -202,7 +284,7 @@ export default function Flashcards() {
           <div className="mt-8 glass-card rounded-xl p-4">
             <div className="flex items-center justify-between text-xs text-muted">
               <span>Studied: {studiedCards.length}</span>
-              <span>Remaining: {selectedDeck.cards.length - studiedCards.length}</span>
+              <span>Remaining: {liveSelectedDeck.cards.length - studiedCards.length}</span>
             </div>
           </div>
         </div>
@@ -210,7 +292,7 @@ export default function Flashcards() {
     );
   }
 
-  if (selectedDeck && !studyMode) {
+  if (liveSelectedDeck && !studyMode) {
     return (
       <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
         <button 
@@ -223,11 +305,11 @@ export default function Flashcards() {
         <div className="glass-card rounded-xl p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-xl font-bold text-text">{selectedDeck.name}</h2>
-              <p className="text-sm text-muted mt-1">{selectedDeck.cards.length} cards • {selectedDeck.subject}</p>
+              <h2 className="text-xl font-bold text-text">{liveSelectedDeck.name}</h2>
+              <p className="text-sm text-muted mt-1">{liveSelectedDeck.cards.length} cards • {liveSelectedDeck.subject}</p>
             </div>
             <button 
-              onClick={() => handleStartStudy(selectedDeck)}
+              onClick={() => handleStartStudy(liveSelectedDeck)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
             >
               <Shuffle className="w-4 h-4" />
@@ -237,15 +319,15 @@ export default function Flashcards() {
 
           <div className="grid grid-cols-3 gap-3">
             <div className="text-center p-3 rounded-lg bg-elevated/30">
-              <p className="text-lg font-bold text-text">{selectedDeck.cards.length}</p>
+              <p className="text-lg font-bold text-text">{liveSelectedDeck.cards.length}</p>
               <p className="text-[10px] text-muted">Total Cards</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-elevated/30">
-              <p className="text-lg font-bold text-warning">{selectedDeck.cards.filter(c => c.nextReview && new Date(c.nextReview) <= new Date('2026-10-31')).length}</p>
+              <p className="text-lg font-bold text-warning">{liveSelectedDeck.cards.filter(c => isDue(c)).length}</p>
               <p className="text-[10px] text-muted">Due Today</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-elevated/30">
-              <p className="text-lg font-bold text-success">{selectedDeck.cards.filter(c => c.reviewCount >= 3).length}</p>
+              <p className="text-lg font-bold text-success">{liveSelectedDeck.cards.filter(c => c.reviewCount >= 3).length}</p>
               <p className="text-[10px] text-muted">Mastered</p>
             </div>
           </div>
@@ -253,7 +335,7 @@ export default function Flashcards() {
 
         <h3 className="text-sm font-semibold text-text mb-3">Cards in this deck</h3>
         <div className="space-y-2">
-          {selectedDeck.cards.map((card) => (
+          {liveSelectedDeck.cards.map((card) => (
             <div key={card.id} className="glass-card rounded-xl p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
@@ -268,10 +350,16 @@ export default function Flashcards() {
                     {card.difficulty}
                   </span>
                   <span className="text-[10px] text-muted">{card.reviewCount}×</span>
+                  {card.nextReview && (
+                    <span className="text-[10px] text-muted">next: {card.nextReview}</span>
+                  )}
                 </div>
               </div>
             </div>
           ))}
+          {liveSelectedDeck.cards.length === 0 && (
+            <p className="text-sm text-muted text-center py-8">No cards in this deck yet.</p>
+          )}
         </div>
       </div>
     );
@@ -288,7 +376,10 @@ export default function Flashcards() {
           </h1>
           <p className="text-sm text-muted mt-1">Active recall for better retention</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors">
+        <button 
+          onClick={() => setShowNewDeck(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">New Deck</span>
         </button>
@@ -313,7 +404,7 @@ export default function Flashcards() {
       {/* Decks Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {decks.map((deck) => {
-          const dueCount = deck.cards.filter(c => c.nextReview && new Date(c.nextReview) <= new Date('2026-10-31')).length;
+          const dueCount = deck.cards.filter(c => isDue(c)).length;
           return (
             <div
               key={deck.id}
@@ -352,11 +443,66 @@ export default function Flashcards() {
         })}
 
         {/* Add Deck Card */}
-        <div className="rounded-xl border-2 border-dashed border-border hover:border-primary/40 p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors min-h-[200px]">
+        <div 
+          onClick={() => setShowNewDeck(true)}
+          className="rounded-xl border-2 border-dashed border-border hover:border-primary/40 p-5 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors min-h-[200px]"
+        >
           <Plus className="w-6 h-6 text-muted" />
           <span className="text-xs text-muted">New Deck</span>
         </div>
       </div>
+
+      {/* New Deck Modal */}
+      {showNewDeck && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowNewDeck(false)} />
+          <div className="relative glass-card rounded-2xl p-6 w-full max-w-md animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-text">New Deck</h2>
+              <button onClick={() => setShowNewDeck(false)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Deck Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Physics Fundamentals"
+                  value={newDeckName}
+                  onChange={(e) => setNewDeckName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateDeck()}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Subject</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Physics"
+                  value={newDeckSubject}
+                  onChange={(e) => setNewDeckSubject(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateDeck()}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <button onClick={() => setShowNewDeck(false)} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateDeck}
+                disabled={!newDeckName.trim()}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                Create Deck
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

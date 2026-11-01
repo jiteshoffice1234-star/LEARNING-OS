@@ -1,16 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Home, BookOpen, Hammer, Compass, Brain, 
   BarChart3, Settings, Award, FileText, Target,
   ChevronLeft, ChevronRight, Search, Bell, Plus,
   RotateCcw, GraduationCap, Map, User, Database,
-  Timer, Inbox, Lightbulb, CheckSquare, Zap
+  Timer, Inbox, Lightbulb, CheckSquare, Zap, AlertCircle, CheckCircle2
 } from 'lucide-react';
+import { readValue } from '../lib/storage';
 
 interface LayoutProps {
   children: React.ReactNode;
   currentPage: string;
   onNavigate: (page: string) => void;
+}
+
+interface AppNotification {
+  id: string;
+  title: string;
+  detail: string;
+  kind: 'alert' | 'info' | 'done';
+}
+
+/**
+ * Derive real notifications from stored data: overdue revisions, tasks due
+ * soon, and a nudge when there's nothing queued. Falls back to an empty list
+ * if storage is unavailable.
+ */
+function buildNotifications(): AppNotification[] {
+  const out: AppNotification[] = [];
+  const today = new Date().toISOString().slice(0, 10);
+
+  try {
+    const revisions = readValue<Array<{ id: string; subject?: string; title?: string; dueDate?: string; status?: string }>>('revisions', []);
+    const overdue = (revisions || []).filter((r) => r.status === 'overdue');
+    if (overdue.length > 0) {
+      out.push({
+        id: 'rev-overdue',
+        title: `${overdue.length} revision${overdue.length === 1 ? '' : 's'} overdue`,
+        detail: overdue[0]?.subject || overdue[0]?.title || 'Catch up soon',
+        kind: 'alert',
+      });
+    }
+
+    const tasks = readValue<Array<{ id: string; title: string; dueDate?: string; status?: string }>>('tasks', []);
+    const dueToday = (tasks || []).filter((t) => t.dueDate === today && t.status !== 'done');
+    if (dueToday.length > 0) {
+      out.push({
+        id: 'task-today',
+        title: `${dueToday.length} task${dueToday.length === 1 ? '' : 's'} due today`,
+        detail: dueToday[0]?.title,
+        kind: 'info',
+      });
+    }
+  } catch {
+    /* storage unavailable — no notifications */
+  }
+
+  return out;
 }
 
 // New 7-section navigation per spec
@@ -91,9 +137,24 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>('home');
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   // Determine which section the current page belongs to
   const currentSection = navSections.find(s => s.items.some(i => i.id === currentPage))?.id || 'home';
+
+  // Real notifications derived from the user's stored data (no fake badge).
+  const notifications = buildNotifications();
+
+  // Close the dropdown when clicking anywhere outside it.
+  useEffect(() => {
+    if (!notifOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [notifOpen]);
 
   const handleSectionClick = (sectionId: string) => {
     if (expandedSection === sectionId) {
@@ -306,10 +367,60 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
             >
               <Plus className="w-4 h-4" />
             </button>
-            <button className="p-2 rounded-lg hover:bg-elevated text-muted hover:text-text transition-colors relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
-            </button>
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={() => setNotifOpen((v) => !v)}
+                aria-label={`Notifications (${notifications.length})`}
+                aria-expanded={notifOpen}
+                className="p-2 rounded-lg hover:bg-elevated text-muted hover:text-text transition-colors relative"
+              >
+                <Bell className="w-4 h-4" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-72 glass-card rounded-xl border border-border shadow-xl z-50 animate-fade-in overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                    <span className="text-sm font-semibold text-text">Notifications</span>
+                    <span className="text-[10px] text-muted">{notifications.length} new</span>
+                  </div>
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center">
+                      <CheckCircle2 className="w-8 h-8 text-success mx-auto mb-2" />
+                      <p className="text-xs text-muted">You're all caught up.</p>
+                    </div>
+                  ) : (
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.map((n) => (
+                        <button
+                          key={n.id}
+                          onClick={() => { setNotifOpen(false); onNavigate(n.kind === 'alert' ? 'revisions' : 'tasks'); }}
+                          className="w-full flex items-start gap-3 px-4 py-3 hover:bg-elevated/50 transition-colors text-left"
+                        >
+                          <div className={`mt-0.5 w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+                            n.kind === 'alert' ? 'bg-danger/15 text-danger' : 'bg-primary/15 text-primary'
+                          }`}>
+                            {n.kind === 'alert' ? <AlertCircle className="w-3.5 h-3.5" /> : <Bell className="w-3.5 h-3.5" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium text-text truncate">{n.title}</p>
+                            {n.detail && <p className="text-[11px] text-muted truncate">{n.detail}</p>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => { setNotifOpen(false); onNavigate('inbox'); }}
+                    className="w-full px-4 py-2.5 text-xs text-primary hover:bg-elevated/50 transition-colors border-t border-border"
+                  >
+                    Open Inbox
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

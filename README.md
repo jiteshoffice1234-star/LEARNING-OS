@@ -107,8 +107,7 @@ Then open `http://localhost:3000` in your browser.
 ### Features
 - **Recharts** — Data visualization
 - **Lucide React** — Icon library
-- **Framer Motion** — Animations
-- **date-fns** — Date utilities
+- **Supabase** (optional) — Cloud file storage for PDFs and images
 
 ### Architecture
 - **Offline-first** — All data stored locally
@@ -198,15 +197,18 @@ The APK will be located at `android/app/build/outputs/apk/release/app-release.ap
 
 LEARNING OS stores all data locally on your device:
 
-- **Web version**: Uses browser localStorage and IndexedDB
+- **Web version**: Uses browser localStorage (survives refresh and navigation)
 - **Android version**: Uses SQLite database in app-private storage
+
+### Optional Cloud Storage
+
+Connect your Supabase account in **Settings → Cloud Storage** to store uploaded files (PDFs, images, documents) in the cloud. Files sync across devices when Supabase is configured. Without Supabase, uploads save to your browser only.
 
 ### What We Don't Do
 
-- ❌ No cloud synchronization
 - ❌ No mandatory user accounts
 - ❌ No data collection or analytics
-- ❌ No third-party API dependencies
+- ❌ No third-party API dependencies (cloud is optional)
 - ❌ No advertising or tracking
 
 ### Backup & Restore
@@ -230,37 +232,32 @@ To restore:
 ### Current Version (v1.0.0)
 
 **Data Persistence:**
-- ⚠️ Web version: Data stored in browser storage (cleared if browser cache is cleared)
+- ✅ Web version: Data persisted in browser localStorage (survives refresh and navigation)
 - ✅ Android version: Persistent local database
 
 **Features:**
-- ⚠️ Some create/edit operations are UI-only (data not persisted in web version)
-- ⚠️ Timer state lost on browser refresh (web version only)
-- ⚠️ File upload not fully implemented
-- ⚠️ Light theme toggle exists but not fully implemented
-- ⚠️ No spaced repetition algorithm (flashcard ratings not used)
+- ✅ All create/edit/delete operations fully functional with persistence
+- ✅ Timer state persisted across browser refresh
+- ✅ File upload fully implemented (Vault, Profile avatar)
+- ✅ Light theme toggle fully implemented
+- ✅ SM-2 spaced repetition algorithm for flashcards
+- ✅ Welcome/onboarding shown on first launch
+- ✅ Backup/restore via JSON export/import
 
 **Platform:**
 - ⚠️ Web version requires modern browser with localStorage support
 - ⚠️ Android version requires Android 5.1+ (API 22)
+- ⚠️ localStorage has a ~5 MB quota; connect Supabase for larger file storage
 
 ### Roadmap
 
 **v1.1.0** (Planned):
-- Implement IndexedDB for web persistence
-- Fix timer persistence across sessions
-- Complete all CRUD operations
-- Implement file upload and storage
-- Add light theme support
-- Implement spaced repetition algorithm
-
-**v1.2.0** (Planned):
 - Cross-module relationships
 - Advanced search
 - Notification system
 - Dashboard widget customization
 
-**v2.0.0** (Planned):
+**v1.2.0** (Planned):
 - Flutter native rewrite
 - iOS support
 - Desktop apps (Windows, macOS, Linux)

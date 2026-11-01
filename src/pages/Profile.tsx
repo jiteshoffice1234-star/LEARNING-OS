@@ -1,9 +1,15 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { usePersistentState, clearAll } from '../lib/storage';
+import { uploadFile } from '../lib/files';
 import { User, Camera, MapPin, Globe, Briefcase, GraduationCap, Target, Edit3, Save, X } from 'lucide-react';
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
-  const [profile, setProfile] = useState({
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [profile, setProfile] = usePersistentState('profile', {
     name: 'Arjun Kumar',
     education: 'Undergraduate',
     focus: 'Computer Science',
@@ -16,7 +22,26 @@ export default function Profile() {
     language: 'English',
     introduction: 'Passionate about building systems that scale. Currently focused on machine learning and distributed systems.',
     careerObjective: 'Become a senior ML engineer at a top tech company within 3 years.',
+    avatarUrl: '',
   });
+
+  /** Upload an avatar image and persist its URL onto the profile. */
+  const handleAvatar = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setAvatarError('Please choose an image file.');
+      return;
+    }
+    setAvatarBusy(true);
+    setAvatarError(null);
+    const result = await uploadFile(file);
+    setAvatarBusy(false);
+    if (result.ok) {
+      setProfile({ ...profile, avatarUrl: result.file.url });
+    } else {
+      setAvatarError(result.error);
+    }
+  };
 
   const stats = {
     totalHours: 1247,
@@ -55,14 +80,36 @@ export default function Profile() {
           <div className="flex flex-col sm:flex-row items-center gap-6">
             {/* Avatar */}
             <div className="relative">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-primary/25">
-                {profile.name.split(' ').map(n => n[0]).join('')}
-              </div>
-              {isEditing && (
-                <button className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-elevated border border-border flex items-center justify-center hover:bg-primary/20 transition-colors">
-                  <Camera className="w-4 h-4 text-muted" />
-                </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  handleAvatar(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={`${profile.name}'s avatar`}
+                  className="w-24 h-24 rounded-2xl object-cover shadow-lg shadow-primary/25"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-primary/25">
+                  {profile.name.split(' ').map(n => n[0]).join('')}
+                </div>
               )}
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarBusy}
+                aria-label="Change profile photo"
+                className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-elevated border border-border flex items-center justify-center hover:bg-primary/20 disabled:opacity-50 transition-colors"
+              >
+                <Camera className="w-4 h-4 text-muted" />
+              </button>
             </div>
             
             {/* Info */}
@@ -78,6 +125,9 @@ export default function Profile() {
                 <h2 className="text-xl font-bold text-text">{profile.name}</h2>
               )}
               <p className="text-sm text-muted mt-1">{profile.situation} • {profile.education}</p>
+              {avatarError && (
+                <p className="text-[11px] text-danger mt-1">{avatarError}</p>
+              )}
               <div className="flex items-center justify-center sm:justify-start gap-4 mt-3 text-xs text-muted">
                 <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {profile.country}</span>
                 <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> {profile.language}</span>
@@ -159,11 +209,28 @@ export default function Profile() {
           <h3 className="text-sm font-semibold text-danger mb-2">Danger Zone</h3>
           <p className="text-xs text-muted mb-4">These actions cannot be undone.</p>
           <div className="flex flex-wrap gap-2">
-            <button className="px-4 py-2 rounded-lg bg-danger/15 text-danger text-xs font-medium hover:bg-danger/25 transition-colors">
+            <button 
+              onClick={() => {
+                try { localStorage.removeItem('learningos:v1:onboardingComplete'); } catch { /* ignore */ }
+                window.location.reload();
+              }}
+              className="px-4 py-2 rounded-lg bg-danger/15 text-danger text-xs font-medium hover:bg-danger/25 transition-colors"
+            >
               Reset Onboarding
             </button>
-            <button className="px-4 py-2 rounded-lg bg-danger/15 text-danger text-xs font-medium hover:bg-danger/25 transition-colors">
-              Delete All Data
+            <button 
+              onClick={() => {
+                if (!confirmDelete) {
+                  setConfirmDelete(true);
+                  window.setTimeout(() => setConfirmDelete(false), 5000);
+                  return;
+                }
+                clearAll();
+                window.location.reload();
+              }}
+              className="px-4 py-2 rounded-lg bg-danger/15 text-danger text-xs font-medium hover:bg-danger/25 transition-colors"
+            >
+              {confirmDelete ? 'Click again to confirm delete' : 'Delete All Data'}
             </button>
           </div>
         </div>

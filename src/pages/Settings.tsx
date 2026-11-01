@@ -2,14 +2,72 @@ import { useState } from 'react';
 import { 
   Settings as SettingsIcon, Moon, Sun, Bell, Clock, Database, 
   Shield, Download, Upload, HardDrive, Trash2, ChevronRight,
-  ToggleLeft, ToggleRight
+  ToggleLeft, ToggleRight, Cloud, CloudOff, CheckCircle2, ExternalLink
 } from 'lucide-react';
+import { useTheme } from '../lib/theme';
+import { usePersistentState, exportAll, clearAll, usedBytes, formatBytes } from '../lib/storage';
+import { getCredentials, saveCredentials, isSupabaseConfigured } from '../lib/supabase';
 
-export default function SettingsPage() {
-  const [darkMode, setDarkMode] = useState(true);
-  const [notifications, setNotifications] = useState(true);
-  const [autoBackup, setAutoBackup] = useState(true);
-  const [encryption, setEncryption] = useState(false);
+export default function SettingsPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
+  const [theme, setTheme] = useTheme();
+  const [notifications, setNotifications] = usePersistentState('settings:notifications', true);
+  const [autoBackup, setAutoBackup] = usePersistentState('settings:autoBackup', true);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [status, setStatus] = useState<string | null>(null);
+
+  // Supabase cloud connection (stored in this browser; editable any time).
+  const savedCreds = getCredentials();
+  const [sbUrl, setSbUrl] = useState(savedCreds?.url ?? '');
+  const [sbKey, setSbKey] = useState(savedCreds?.anonKey ?? '');
+  const [sbStatus, setSbStatus] = useState<string | null>(null);
+  const connected = isSupabaseConfigured();
+
+  const handleSaveSupabase = () => {
+    if (!sbUrl.trim() || !sbKey.trim()) {
+      setSbStatus('Enter both the Project URL and the anon key.');
+      return;
+    }
+    saveCredentials(sbUrl, sbKey);
+    setSbStatus('Connected. Uploads now go to Supabase Storage.');
+  };
+
+  const handleDisconnectSupabase = () => {
+    saveCredentials('', '');
+    setSbUrl('');
+    setSbKey('');
+    setSbStatus('Disconnected. Uploads will save to this browser only.');
+  };
+
+  const downloadJSON = (data: unknown, filename: string) => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleBackup = () => {
+    downloadJSON(exportAll(), `learning-os-backup-${new Date().toISOString().split('T')[0]}.json`);
+    setStatus('Backup downloaded.');
+    window.setTimeout(() => setStatus(null), 3000);
+  };
+
+  const handleClearAll = () => {
+    if (!confirmClear) {
+      setConfirmClear(true);
+      setStatus('Click "Delete All Data" again to confirm.');
+      window.setTimeout(() => setConfirmClear(false), 5000);
+      return;
+    }
+    clearAll();
+    setConfirmClear(false);
+    setStatus('All data deleted. The app will reload with demo data.');
+    window.setTimeout(() => window.location.reload(), 1200);
+  };
 
   return (
     <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
@@ -28,11 +86,11 @@ export default function SettingsPage() {
           </h2>
           <div className="glass-card rounded-xl divide-y divide-border/50">
             <SettingRow 
-              icon={darkMode ? Moon : Sun}
+              icon={theme === 'dark' ? Moon : Sun}
               label="Dark Mode"
-              description="Use dark theme throughout the app"
-              toggle={darkMode}
-              onToggle={() => setDarkMode(!darkMode)}
+              description={theme === 'dark' ? 'Dark theme is active' : 'Light theme is active'}
+              toggle={theme === 'dark'}
+              onToggle={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
             />
             <SettingRow 
               icon={Clock}
@@ -106,6 +164,80 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* Cloud Storage (Supabase) */}
+        <section className="mb-8">
+          <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
+            {connected ? <Cloud className="w-4 h-4 text-success" /> : <CloudOff className="w-4 h-4 text-primary" />}
+            Cloud Storage
+          </h2>
+          <div className="glass-card rounded-xl p-5">
+            <div className={`flex items-center gap-2 mb-4 px-3 py-2 rounded-lg text-xs ${
+              connected ? 'bg-success/10 text-success border border-success/20' : 'bg-elevated/50 text-muted'
+            }`}>
+              {connected ? <CheckCircle2 className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
+              {connected
+                ? 'Connected to Supabase — PDFs and images upload to the cloud.'
+                : 'Not connected. Uploads stay in this browser (max 1.5 MB). Connect Supabase to store files in the cloud — free tier.'}
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Project URL</label>
+                <input
+                  type="text"
+                  placeholder="https://your-project.supabase.co"
+                  value={sbUrl}
+                  onChange={(e) => setSbUrl(e.target.value)}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Anon / Public Key</label>
+                <input
+                  type="password"
+                  placeholder="eyJhbGciOi..."
+                  value={sbKey}
+                  onChange={(e) => setSbKey(e.target.value)}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={handleSaveSupabase}
+                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+                >
+                  {connected ? 'Update Connection' : 'Connect Supabase'}
+                </button>
+                {connected && (
+                  <button
+                    onClick={handleDisconnectSupabase}
+                    className="px-4 py-2 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors"
+                  >
+                    Disconnect
+                  </button>
+                )}
+                <a
+                  href="https://supabase.com/dashboard/project/_/settings/api"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-xs text-primary hover:text-accent transition-colors"
+                >
+                  Find these in the Supabase dashboard <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
+              {sbStatus && <p className="text-xs text-primary">{sbStatus}</p>}
+
+              <p className="text-[11px] text-muted leading-relaxed">
+                One-time setup in Supabase: open <span className="text-text">Storage</span> and create a
+                <span className="text-text"> public bucket named “vault”</span>. Then uploads (PDF, JPG, PNG) work automatically.
+                Keys are stored only in this browser and are included in your backups.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Data Management */}
         <section className="mb-8">
           <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -116,39 +248,53 @@ export default function SettingsPage() {
             <SettingRow 
               icon={HardDrive}
               label="Storage Used"
-              description="Local database and files"
-              value="12.4 MB"
+              description="Local data in this browser"
+              value={formatBytes(usedBytes())}
             />
-            <div className="flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors cursor-pointer">
+            <button 
+              onClick={handleBackup}
+              className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left"
+            >
               <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
                 <Download className="w-4 h-4 text-success" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-text">Backup Data</p>
-                <p className="text-xs text-muted">Export all data as encrypted archive</p>
+                <p className="text-xs text-muted">Download all data as a JSON file</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
-            </div>
-            <div className="flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors cursor-pointer">
+            </button>
+            <button 
+              onClick={() => onNavigate?.('backup')}
+              className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left"
+            >
               <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
                 <Upload className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-text">Restore Data</p>
-                <p className="text-xs text-muted">Import from backup file</p>
+                <p className="text-xs text-muted">Import from a backup file</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
-            </div>
-            <div className="flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors cursor-pointer">
+            </button>
+            <button 
+              onClick={handleClearAll}
+              className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left"
+            >
               <div className="w-8 h-8 rounded-lg bg-danger/15 flex items-center justify-center">
                 <Trash2 className="w-4 h-4 text-danger" />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-text">Clear Cache</p>
-                <p className="text-xs text-muted">Remove temporary files (3.2 MB)</p>
+                <p className="text-sm text-text">{confirmClear ? 'Confirm: Delete Everything' : 'Delete All Data'}</p>
+                <p className="text-xs text-muted">{confirmClear ? 'Click again to permanently erase' : 'Erase all data stored in this browser'}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
-            </div>
+            </button>
+            {status && (
+              <div className="p-4">
+                <p className="text-xs text-primary">{status}</p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -161,17 +307,15 @@ export default function SettingsPage() {
           <div className="glass-card rounded-xl divide-y divide-border/50">
             <SettingRow 
               icon={Shield}
-              label="App Lock"
-              description="Require authentication to open app"
-              toggle={false}
-              onToggle={() => {}}
+              label="Offline Storage"
+              description="All data stays on this device — no cloud sync"
+              value="Always on"
             />
             <SettingRow 
               icon={Shield}
-              label="Encrypt Backup"
-              description="Password-protect backup files"
-              toggle={encryption}
-              onToggle={() => setEncryption(!encryption)}
+              label="No Tracking"
+              description="The app collects no analytics or personal data"
+              value="Always on"
             />
             <SettingRow 
               icon={Shield}
@@ -192,21 +336,15 @@ export default function SettingsPage() {
             <SettingRow 
               icon={Database}
               label="Auto Backup"
-              description="Automatically backup data daily"
+              description="Remind me to back up regularly"
               toggle={autoBackup}
               onToggle={() => setAutoBackup(!autoBackup)}
             />
             <SettingRow 
-              icon={Clock}
-              label="Last Backup"
-              description="Most recent backup timestamp"
-              value="Today, 2:30 PM"
-            />
-            <SettingRow 
               icon={HardDrive}
               label="Backup Location"
-              description="Where backups are stored"
-              value="Local Storage"
+              description="Where backups are saved"
+              value="Your device (download)"
             />
           </div>
         </section>

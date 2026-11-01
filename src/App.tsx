@@ -1,33 +1,62 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import Layout from './components/Layout';
 import CommandPalette from './components/CommandPalette';
 import Welcome from './pages/Welcome';
 import Dashboard from './pages/Dashboard';
-import StudyCenter from './pages/StudyCenter';
-import StudyTimer from './pages/StudyTimer';
-import CalendarPage from './pages/Calendar';
-import Skills from './pages/Skills';
-import Analytics from './pages/Analytics';
-import Vault from './pages/Vault';
-import Notes from './pages/Notes';
-import SettingsPage from './pages/Settings';
-import RevisionManager from './pages/RevisionManager';
-import TestsCenter from './pages/TestsCenter';
-import Roadmap from './pages/Roadmap';
-import Qualifications from './pages/Qualifications';
-import Profile from './pages/Profile';
-import BackupCenter from './pages/BackupCenter';
-import InboxPage from './pages/Inbox';
-import Tasks from './pages/Tasks';
-import Projects from './pages/Projects';
-import Flashcards from './pages/Flashcards';
-import Knowledge from './pages/Knowledge';
-import Goals from './pages/Goals';
+import { initTheme } from './lib/theme';
+
+// Everything except the landing page loads on demand. This keeps the initial
+// bundle small (recharts alone is ~400 kB) while the dashboard renders instantly.
+const InboxPage = lazy(() => import('./pages/Inbox'));
+const StudyCenter = lazy(() => import('./pages/StudyCenter'));
+const StudyTimer = lazy(() => import('./pages/StudyTimer'));
+const CalendarPage = lazy(() => import('./pages/Calendar'));
+const Skills = lazy(() => import('./pages/Skills'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Vault = lazy(() => import('./pages/Vault'));
+const Notes = lazy(() => import('./pages/Notes'));
+const SettingsPage = lazy(() => import('./pages/Settings'));
+const RevisionManager = lazy(() => import('./pages/RevisionManager'));
+const TestsCenter = lazy(() => import('./pages/TestsCenter'));
+const Roadmap = lazy(() => import('./pages/Roadmap'));
+const Qualifications = lazy(() => import('./pages/Qualifications'));
+const Profile = lazy(() => import('./pages/Profile'));
+const BackupCenter = lazy(() => import('./pages/BackupCenter'));
+const Tasks = lazy(() => import('./pages/Tasks'));
+const Projects = lazy(() => import('./pages/Projects'));
+const Flashcards = lazy(() => import('./pages/Flashcards'));
+const Knowledge = lazy(() => import('./pages/Knowledge'));
+const Goals = lazy(() => import('./pages/Goals'));
+
+/** Lightweight spinner shown while a route chunk downloads. */
+function PageLoading() {
+  return (
+    <div className="flex items-center justify-center min-h-[60vh]" role="status" aria-label="Loading page">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+    </div>
+  );
+}
+
+const ONBOARDING_KEY = 'learningos:v1:onboardingComplete';
+
+function hasCompletedOnboarding(): boolean {
+  try {
+    return localStorage.getItem(ONBOARDING_KEY) === 'true';
+  } catch {
+    return true; // if storage is blocked, don't trap the user in onboarding
+  }
+}
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
+  // Show onboarding only on the very first visit.
+  const [showWelcome, setShowWelcome] = useState(() => !hasCompletedOnboarding());
+
+  // Apply the persisted theme as early as possible.
+  useEffect(() => {
+    initTheme();
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -51,7 +80,7 @@ export default function App() {
   const renderPage = () => {
     switch (currentPage) {
       // Home
-      case 'dashboard': return <Dashboard />;
+      case 'dashboard': return <Dashboard onNavigate={setCurrentPage} />;
       case 'inbox': return <InboxPage />;
       // Learn
       case 'study': return <StudyCenter />;
@@ -77,7 +106,7 @@ export default function App() {
       // System
       case 'profile': return <Profile />;
       case 'backup': return <BackupCenter />;
-      case 'settings': return <SettingsPage />;
+      case 'settings': return <SettingsPage onNavigate={setCurrentPage} />;
       default: return <Dashboard />;
     }
   };
@@ -85,7 +114,7 @@ export default function App() {
   return (
     <>
       <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
-        {renderPage()}
+        <Suspense fallback={<PageLoading />}>{renderPage()}</Suspense>
       </Layout>
       <CommandPalette 
         isOpen={commandPaletteOpen} 

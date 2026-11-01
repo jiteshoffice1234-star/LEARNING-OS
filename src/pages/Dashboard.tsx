@@ -1,11 +1,27 @@
+import { Suspense, lazy } from 'react';
 import { 
   Clock, Target, Flame, TrendingUp, BookOpen, Award,
   ArrowUpRight, ArrowDownRight, CheckCircle2, AlertCircle
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { weeklyStudyData, courses, revisions, achievements, heatmapData } from '../data/mockData';
+import { courses, revisions, achievements, heatmapData } from '../data/mockData';
 
-export default function Dashboard() {
+// recharts is heavy (~400 kB) so the charts load on demand. The rest of the
+// dashboard renders immediately; only the chart frames wait for their chunk.
+const WeeklyStudyChart = lazy(() => import('../components/DashboardCharts').then(m => ({ default: m.WeeklyStudyChart })));
+const MonthlyTrendChart = lazy(() => import('../components/DashboardCharts').then(m => ({ default: m.MonthlyTrendChart })));
+
+/** Neutral placeholder that reserves the chart's space while it loads. */
+function ChartSkeleton({ className }: { className?: string }) {
+  return (
+    <div className={`${className ?? ''} animate-pulse rounded-lg bg-elevated/50`} aria-hidden="true" />
+  );
+}
+
+/**
+ * Dashboard — the landing page.
+ * `onNavigate` lets the card-level links jump to their full pages.
+ */
+export default function Dashboard({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const todayHours = 3.5;
   const dailyTarget = 4;
   const streak = 42;
@@ -77,25 +93,9 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="h-40">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={weeklyStudyData}>
-                <defs>
-                  <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8170ED" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#8170ED" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2F3A" vertical={false} />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#9295A3', fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9295A3', fontSize: 11 }} />
-                <Tooltip 
-                  contentStyle={{ background: '#191C24', border: '1px solid #2A2F3A', borderRadius: '8px', fontSize: '12px' }}
-                  labelStyle={{ color: '#E8E8EF' }}
-                  itemStyle={{ color: '#8170ED' }}
-                />
-                <Area type="monotone" dataKey="hours" stroke="#8170ED" strokeWidth={2} fill="url(#colorHours)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <Suspense fallback={<ChartSkeleton className="h-full w-full" />}>
+              <WeeklyStudyChart />
+            </Suspense>
           </div>
         </div>
 
@@ -136,7 +136,13 @@ export default function Dashboard() {
         <div className="glass-card rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-text">Course Progress</h3>
-            <button className="text-xs text-primary hover:text-accent transition-colors">View all</button>
+            <button
+              onClick={() => onNavigate?.('study')}
+              aria-label="View all courses in Study Center"
+              className="text-xs text-primary hover:text-accent transition-colors"
+            >
+              View all
+            </button>
           </div>
           <div className="space-y-4">
             {courses.map((course) => (
@@ -163,7 +169,13 @@ export default function Dashboard() {
         <div className="glass-card rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-text">Upcoming Revisions</h3>
-            <button className="text-xs text-primary hover:text-accent transition-colors">View all</button>
+            <button
+              onClick={() => onNavigate?.('revisions')}
+              aria-label="View all revisions"
+              className="text-xs text-primary hover:text-accent transition-colors"
+            >
+              View all
+            </button>
           </div>
           <div className="space-y-3">
             {revisions.filter(r => r.status !== 'completed').slice(0, 5).map((rev) => (
@@ -197,7 +209,13 @@ export default function Dashboard() {
         <div className="lg:col-span-2 glass-card rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-text">Recent Achievements</h3>
-            <button className="text-xs text-primary hover:text-accent transition-colors">View vault</button>
+            <button
+              onClick={() => onNavigate?.('vault')}
+              aria-label="View all achievements in the Vault"
+              className="text-xs text-primary hover:text-accent transition-colors"
+            >
+              View vault
+            </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {achievements.slice(0, 4).map((ach) => (
@@ -219,23 +237,9 @@ export default function Dashboard() {
         <div className="glass-card rounded-xl p-4">
           <h3 className="text-sm font-semibold text-text mb-3">Monthly Trend</h3>
           <div className="h-36">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[
-                { month: 'Jul', hours: 95 },
-                { month: 'Aug', hours: 110 },
-                { month: 'Sep', hours: 88 },
-                { month: 'Oct', hours: 105 },
-              ]}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2A2F3A" vertical={false} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#9295A3', fontSize: 10 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9295A3', fontSize: 10 }} />
-                <Tooltip 
-                  contentStyle={{ background: '#191C24', border: '1px solid #2A2F3A', borderRadius: '8px', fontSize: '11px' }}
-                  labelStyle={{ color: '#E8E8EF' }}
-                />
-                <Bar dataKey="hours" fill="#8170ED" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <Suspense fallback={<ChartSkeleton className="h-full w-full" />}>
+              <MonthlyTrendChart />
+            </Suspense>
           </div>
           <div className="flex items-center justify-center gap-1 mt-2">
             <ArrowUpRight className="w-3 h-3 text-success" />

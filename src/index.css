@@ -1,30 +1,79 @@
 @import "tailwindcss";
 
+/* ---- Theme tokens -------------------------------------------------------
+   Tailwind v4 `@theme` maps these to utility classes (bg-bg, text-text, ...).
+   We point them at runtime CSS variables so the light/dark toggle can swap
+   the palette without rebuilding classes. */
 @theme {
-  --color-bg: #111318;
-  --color-surface: #191C24;
-  --color-elevated: #252A35;
-  --color-primary: #8170ED;
-  --color-accent: #A99BFF;
-  --color-text: #E8E8EF;
-  --color-muted: #9295A3;
-  --color-success: #43B889;
-  --color-warning: #E5AA55;
-  --color-danger: #E16F79;
-  --color-border: #2A2F3A;
+  --color-bg: var(--app-bg);
+  --color-surface: var(--app-surface);
+  --color-elevated: var(--app-elevated);
+  --color-primary: var(--app-primary);
+  --color-accent: var(--app-accent);
+  --color-text: var(--app-text);
+  --color-muted: var(--app-muted);
+  --color-success: var(--app-success);
+  --color-warning: var(--app-warning);
+  --color-danger: var(--app-danger);
+  --color-border: var(--app-border);
+}
+
+/* Dark palette (default) */
+:root,
+[data-theme='dark'] {
+  --app-bg: #111318;
+  --app-surface: #191c24;
+  --app-elevated: #252a35;
+  --app-primary: #8170ed;
+  --app-accent: #a99bff;
+  --app-text: #e8e8ef;
+  --app-muted: #9295a3;
+  --app-success: #43b889;
+  --app-warning: #e5aa55;
+  --app-danger: #e16f79;
+  --app-border: #2a2f3a;
+  color-scheme: dark;
+}
+
+/* Light palette */
+[data-theme='light'] {
+  --app-bg: #f5f6fa;
+  --app-surface: #ffffff;
+  --app-elevated: #eceef5;
+  --app-primary: #5b47d6;
+  --app-accent: #7c68f0;
+  --app-text: #1b1d27;
+  --app-muted: #5f6377;
+  --app-success: #1f8f66;
+  --app-warning: #b5761a;
+  --app-danger: #c2454f;
+  --app-border: #d9dce8;
+  color-scheme: light;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2A2F3A #191C24;
+  scrollbar-color: var(--app-border) var(--app-surface);
 }
 
 body {
-  background-color: #111318;
-  color: #E8E8EF;
+  background-color: var(--app-bg);
+  color: var(--app-text);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Glass cards read the surface token so they invert correctly in light mode */
+.glass-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-elevated) 80%, transparent),
+    color-mix(in srgb, var(--app-surface) 90%, transparent)
+  );
+  border: 1px solid color-mix(in srgb, var(--app-border) 60%, transparent);
+  backdrop-filter: blur(8px);
 }
 
 @keyframes pulse-ring {
@@ -50,18 +99,12 @@ body {
   animation: slide-in 0.3s ease-out forwards;
 }
 
-.glass-card {
-  background: linear-gradient(135deg, rgba(37, 42, 53, 0.8), rgba(25, 28, 36, 0.9));
-  border: 1px solid rgba(42, 47, 58, 0.6);
-  backdrop-filter: blur(8px);
-}
-
 .glow-primary {
   box-shadow: 0 0 20px rgba(129, 112, 237, 0.15), 0 0 40px rgba(129, 112, 237, 0.05);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #8170ED, #A99BFF);
+  background: linear-gradient(135deg, var(--app-primary), var(--app-accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
