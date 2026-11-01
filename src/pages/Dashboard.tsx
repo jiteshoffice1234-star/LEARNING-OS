@@ -121,7 +121,7 @@ export default function Dashboard({ onNavigate }: { onNavigate?: (page: string) 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
         <div>
           <h1 className="text-xl font-bold text-text">Good morning, {profile.name || 'Learner'} 👋</h1>
-          <p className="text-xs text-muted">{streak}-day streak · Oct 31, 2026</p>
+          <p className="text-xs text-muted">{streak}-day streak · {today}</p>
         </div>
       </div>
 
