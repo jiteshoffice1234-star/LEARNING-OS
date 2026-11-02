@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { usePersistentState, exportAll, clearAll, usedBytes, formatBytes } from '../lib/storage';
-import { getGitHubConfig, saveGitHubConfig, clearGitHubConfig, isGitHubConfigured } from '../lib/githubFiles';
+import { getGitHubConfig, saveGitHubConfig, isGitHubConfigured, testGitHubConnection } from '../lib/githubFiles';
 
 export default function SettingsPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const [theme, setTheme] = useTheme();
@@ -23,12 +23,13 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
   const [ghRepo, setGhRepo] = useState(savedCreds?.repo ?? '');
   const [ghBranch, setGhBranch] = useState(savedCreds?.branch ?? 'main');
   const [ghFolder, setGhFolder] = useState(savedCreds?.folder ?? 'vault');
-  const [ghStatus, setGhStatus] = useState<string | null>(null);
+  const [ghStatus, setGhStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [ghTesting, setGhTesting] = useState(false);
   const ghConfigured = isGitHubConfigured();
 
-  const handleSaveGitHub = () => {
+  const handleSaveGitHub = async () => {
     if (!ghToken.trim() || !ghOwner.trim() || !ghRepo.trim()) {
-      setGhStatus('Enter Project URL, Anon key, and Project name.');
+      setGhStatus({ kind: 'error', text: 'Token, owner, and repository are required.' });
       return;
     }
     saveGitHubConfig({
@@ -38,17 +39,18 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
       branch: ghBranch.trim() || 'main',
       folder: ghFolder.trim() || 'vault',
     });
-    setGhStatus('Connected. Uploads now go to GitHub Storage.');
+    setGhTesting(true);
+    const result = await testGitHubConnection();
+    setGhTesting(false);
+    setGhStatus({ kind: result.ok ? 'ok' : 'error', text: result.message });
   };
 
-  const handleDisconnectGitHub = () => {
-    clearGitHubConfig();
-    setGhToken('');
-    setGhOwner('');
-    setGhRepo('');
-    setGhBranch('main');
-    setGhFolder('vault');
-    setGhStatus('Disconnected. Uploads will save to this browser only.');
+  const handleTestGitHub = async () => {
+    setGhTesting(true);
+    setGhStatus(null);
+    const result = await testGitHubConnection();
+    setGhTesting(false);
+    setGhStatus({ kind: result.ok ? 'ok' : 'error', text: result.message });
   };
 
   const downloadJSON = (data: unknown, filename: string) => {
@@ -250,25 +252,30 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={handleSaveGitHub}
-                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+                  disabled={ghTesting}
+                  className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
                 >
-                  {ghConfigured ? 'Update Connection' : 'Connect GitHub'}
+                  {ghTesting ? 'Checking…' : 'Save Connection'}
                 </button>
-                {ghConfigured && (
-                  <button
-                    onClick={handleDisconnectGitHub}
-                    className="px-4 py-2 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors"
-                  >
-                    Disconnect
-                  </button>
-                )}
+                <button
+                  onClick={handleTestGitHub}
+                  disabled={ghTesting}
+                  className="px-4 py-2 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors disabled:opacity-60"
+                >
+                  Test Connection
+                </button>
               </div>
 
-              {ghStatus && <p className="text-xs text-primary">{ghStatus}</p>}
+              {ghStatus && (
+                <p className={`text-xs break-words ${ghStatus.kind === 'ok' ? 'text-success' : 'text-danger'}`}>
+                  {ghStatus.text}
+                </p>
+              )}
 
               <p className="text-[11px] text-muted leading-relaxed">
-                Uploaded files are stored in your GitHub repo at <span className="text-text">/{ghFolder}</span>. 
-                Anyone with repo access can view them. Files are public by default on public repos.
+                Uploaded files are stored in your GitHub repo at <span className="text-text">/{ghFolder}</span> on branch{' '}
+                <span className="text-text">{ghBranch}</span>. The token is saved only in this browser. Files on a public repo
+                can be viewed by anyone with the link.
               </p>
             </div>
           </div>

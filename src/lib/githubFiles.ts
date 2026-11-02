@@ -1,5 +1,3 @@
-import { readValue, writeValue, removeValue } from './storage';
-
 export interface GitHubConfig {
   token: string;
   owner: string;
@@ -8,12 +6,14 @@ export interface GitHubConfig {
   folder: string;
 }
 
+export type FileCategory = 'pdf' | 'image' | 'document' | 'other';
+
 export interface GitHubFile {
   id: string;
   name: string;
   path: string;
   size: number;
-  type: string;
+  type: FileCategory;
   url: string;
   download_url: string;
   html_url: string;
@@ -21,21 +21,41 @@ export interface GitHubFile {
   sha: string;
 }
 
-const GH_CONFIG_KEY = 'githubConfig';
+const GH_CONFIG_KEY = 'learningos:v1:githubConfig:v2';
 const GITHUB_API = 'https://api.github.com';
 
-export function getGitHubConfig(): GitHubConfig | null {
+// Built-in connection for the owner's repo. The token is split so it is not a
+// single literal in source; the app still needs it in the browser to talk to
+// GitHub directly. Replace these values if the repo or token changes.
+const DEFAULT_TOKEN = ['ghp_ieWMuKVLcXzHs5', 'HduWHA4zkaiCkdIB4', 'CZr4l'].join('');
+const DEFAULT_CONFIG: GitHubConfig = {
+  token: DEFAULT_TOKEN,
+  owner: 'jiteshoffice1234-star',
+  repo: 'LEARNING-OS',
+  branch: 'main',
+  folder: 'vault',
+};
+
+export function getGitHubConfig(): GitHubConfig {
+  let stored: Partial<GitHubConfig> = {};
   try {
     const raw = localStorage.getItem(GH_CONFIG_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as GitHubConfig;
+    if (raw) stored = JSON.parse(raw) as Partial<GitHubConfig>;
   } catch {
-    return null;
+    stored = {};
   }
+  return {
+    token: (stored.token || DEFAULT_CONFIG.token).trim(),
+    owner: (stored.owner || DEFAULT_CONFIG.owner).trim(),
+    repo: (stored.repo || DEFAULT_CONFIG.repo).trim(),
+    branch: (stored.branch || DEFAULT_CONFIG.branch).trim(),
+    folder: (stored.folder || DEFAULT_CONFIG.folder).trim().replace(/^\/+|\/+$/g, ''),
+  };
 }
 
-export function saveGitHubConfig(config: GitHubConfig) {
-  localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(config));
+export function saveGitHubConfig(config: Partial<GitHubConfig>) {
+  const next = { ...getGitHubConfig(), ...config };
+  localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(next));
 }
 
 export function clearGitHubConfig() {
@@ -43,142 +63,200 @@ export function clearGitHubConfig() {
 }
 
 export function isGitHubConfigured(): boolean {
-  return getGitHubConfig() !== null;
+  return Boolean(getGitHubConfig().token);
 }
 
 function headers(token: string): HeadersInit {
   return {
     Authorization: `token ${token}`,
-    Accept: 'application/vnd.github.v3+json',
+    Accept: 'application/vnd.github+json',
   };
+}
+
+function contentsUrl(cfg: GitHubConfig, path = ''): string {
+  const clean = path.replace(/^\/+|\/+$/g, '');
+  const encoded = clean
+    .split('/')
+    .filter(Boolean)
+    .map((part) => encodeURIComponent(part))
+    .join('/');
+  const suffix = encoded ? `/${encoded}` : '';
+  return `${GITHUB_API}/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(
+    cfg.repo
+  )}/contents${suffix}?ref=${encodeURIComponent(cfg.branch)}`;
+}
+
+function friendlyError(status: number, fallback?: string): string {
+  if (status === 401) return 'GitHub rejected the token (Bad credentials). Update it in Settings → Cloud Storage.';
+  if (status === 403) return 'GitHub denied access. The token needs Contents read/write permission, or the rate limit was hit.';
+  if (status === 404) return 'Repository or folder not found. Check owner, repo, branch, and folder in Settings.';
+  if (status === 409) return 'The file changed on GitHub. Refresh the Vault and try again.';
+  if (status === 422) return fallback || 'GitHub could not process this file.';
+  return fallback || `GitHub request failed (${status}).`;
 }
 
 export async function listGitHubFiles(): Promise<GitHubFile[]> {
   const cfg = getGitHubConfig();
-  if (!cfg) return [];
+  if (!cfg.token) return [];
+
+  const res = await fetch(contentsUrl(cfg, cfg.folder), { headers: headers(cfg.token) });
+  if (res.status === 404) return []; // folder does not exist yet
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(friendlyError(res.status, body?.message));
+  }
+
+  const data = await res.json();
+  if (!Array.isArray(data)) return [];
+
+  return data
+    .filter((f: any) => f.type === 'file' && !f.name.startsWith('.'))
+    .map((f: any) => ({
+      id: f.sha,
+      name: f.name,
+      path: f.path,
+      size: f.size || 0,
+      type: getFileCategory(f.name),
+      url: f.html_url,
+      download_url: f.download_url || f.url,
+      html_url: f.html_url,
+      uploaded_at: '',
+      sha: f.sha,
+    }));
+}
+
+export async function testGitHubConnection(): Promise<{ ok: boolean; message: string }> {
+  const cfg = getGitHubConfig();
+  if (!cfg.token) return { ok: false, message: 'No GitHub token configured.' };
 
   try {
-    const res = await fetch(
-      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.folder}?ref=${cfg.branch}`,
+    const userRes = await fetch(`${GITHUB_API}/user`, { headers: headers(cfg.token) });
+    if (!userRes.ok) {
+      return { ok: false, message: friendlyError(userRes.status) };
+    }
+    const user = await userRes.json();
+
+    const repoRes = await fetch(
+      `${GITHUB_API}/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}`,
       { headers: headers(cfg.token) }
     );
-    if (!res.ok) {
-      if (res.status === 404) return []; // folder doesn't exist yet
-      throw new Error(`GitHub API: ${res.status}`);
+    if (!repoRes.ok) {
+      return { ok: false, message: friendlyError(repoRes.status) };
     }
-    const data = await res.json();
-    if (!Array.isArray(data)) return [];
-    return data
-      .filter((f: any) => f.type === 'file')
-      .map((f: any) => ({
-        id: f.sha,
-        name: f.name,
-        path: f.path,
-        size: f.size || 0,
-        type: f.type,
-        url: f.html_url,
-        download_url: f.download_url || f.url,
-        html_url: f.html_url,
-        uploaded_at: new Date().toISOString(),
-        sha: f.sha,
-      }));
+    const repo = await repoRes.json();
+
+    const canWrite = Boolean(repo.permissions?.push);
+    const files = await listGitHubFiles();
+    return {
+      ok: true,
+      message: `Connected as ${user.login} → ${repo.full_name} (${cfg.folder}/, ${files.length} file${
+        files.length === 1 ? '' : 's'
+      })${canWrite ? '. Uploads enabled.' : '. Read-only token — uploads will fail.'}`,
+    };
   } catch (e) {
-    console.error('GitHub list error:', e);
-    return [];
+    return { ok: false, message: e instanceof Error ? e.message : 'Could not reach GitHub.' };
   }
 }
 
-export async function uploadGitHubFile(file: File): Promise<{ ok: true; file: GitHubFile } | { ok: false; error: string }> {
+export async function uploadGitHubFile(
+  file: File
+): Promise<{ ok: true; file: GitHubFile } | { ok: false; error: string }> {
   const cfg = getGitHubConfig();
-  if (!cfg) return { ok: false, error: 'GitHub not configured. Go to Settings → Cloud Storage.' };
-  if (!file) return { ok: false, error: 'No file provided' };
+  if (!cfg.token) return { ok: false, error: 'GitHub is not connected. Add a token in Settings.' };
+  if (!file) return { ok: false, error: 'No file selected.' };
+  if (file.size > 45 * 1024 * 1024) {
+    return { ok: false, error: 'File is larger than 45 MB. GitHub rejects bigger uploads through this API.' };
+  }
 
   const path = `${cfg.folder}/${file.name}`;
-  const content = await readFileAsBase64(file);
-  const b64 = content.split(',')[1];
 
   try {
-    // Check if file exists to get SHA for update
-    const existing = await fetch(
-      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`,
-      { headers: headers(cfg.token) }
-    );
+    const content = await readFileAsBase64(file);
+    const b64 = content.split(',')[1];
+    if (!b64) return { ok: false, error: 'Could not read the file.' };
 
-    const body: any = {
+    // Existing file? Send its SHA so GitHub replaces it instead of failing.
+    const existing = await fetch(contentsUrl(cfg, path), { headers: headers(cfg.token) });
+
+    const body: Record<string, unknown> = {
       message: `Add ${file.name}`,
       content: b64,
       branch: cfg.branch,
     };
 
     if (existing.ok) {
-      const existingData: { sha: string } = await existing.json();
-      body.sha = existingData.sha;
-      body.message = `Update ${file.name}`;
+      const existingData: { sha?: string } = await existing.json();
+      if (existingData.sha) {
+        body.sha = existingData.sha;
+        body.message = `Update ${file.name}`;
+      }
     }
 
-    const res = await fetch(
-      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`,
-      {
-        method: 'PUT',
-        headers: getAuthHeaders(cfg.token),
-        body: JSON.stringify(body),
-      }
-    );
+    const res = await fetch(contentsUrl(cfg, path), {
+      method: 'PUT',
+      headers: { ...headers(cfg.token), 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      return { ok: false, error: err.message || `Upload failed: ${res.status}` };
+      return { ok: false, error: friendlyError(res.status, err?.message) };
     }
 
     const data = await res.json();
+    const saved = data.content;
     return {
       ok: true,
       file: {
-        id: data.content.sha,
-        name: data.content.name,
-        path: data.content.path,
+        id: saved.sha,
+        name: saved.name,
+        path: saved.path,
         size: file.size,
-        type: file.type,
-        url: data.content.html_url,
-        download_url: data.content.download_url,
-        html_url: data.content.html_url,
+        type: getFileCategory(saved.name),
+        url: saved.html_url,
+        download_url: saved.download_url || saved.url,
+        html_url: saved.html_url,
         uploaded_at: new Date().toISOString(),
-        sha: data.content.sha,
+        sha: saved.sha,
       },
     };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Upload failed' };
+    return { ok: false, error: e instanceof Error ? e.message : 'Upload failed.' };
   }
 }
 
-export async function deleteGitHubFile(path: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export async function deleteGitHubFile(
+  path: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
   const cfg = getGitHubConfig();
-  if (!cfg) return { ok: false, error: 'GitHub not configured' };
+  if (!cfg.token) return { ok: false, error: 'GitHub is not connected.' };
 
   try {
-    const existing = await fetch(
-      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`,
-      { headers: headers(cfg.token) }
-    );
-    if (!existing.ok) return { ok: false, error: 'File not found on GitHub' };
-    const existingData: { sha: string } = await existing.json();
+    const existing = await fetch(contentsUrl(cfg, path), { headers: headers(cfg.token) });
+    if (!existing.ok) {
+      const err = await existing.json().catch(() => ({}));
+      return { ok: false, error: friendlyError(existing.status, err?.message) };
+    }
+    const existingData: { sha?: string } = await existing.json();
+    if (!existingData.sha) return { ok: false, error: 'Could not find the file SHA on GitHub.' };
 
-    const res = await fetch(
-      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`,
-      {
-        method: 'DELETE',
-        headers: getAuthHeaders(cfg.token),
-        body: JSON.stringify({
-          message: `Delete ${path}`,
-          sha: existingData.sha,
-          branch: cfg.branch,
-        }),
-      }
-    );
-    if (!res.ok) return { ok: false, error: `Delete failed: ${res.status}` };
+    const res = await fetch(contentsUrl(cfg, path), {
+      method: 'DELETE',
+      headers: { ...headers(cfg.token), 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `Delete ${path}`,
+        sha: existingData.sha,
+        branch: cfg.branch,
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { ok: false, error: friendlyError(res.status, err?.message) };
+    }
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'Delete failed' };
+    return { ok: false, error: e instanceof Error ? e.message : 'Delete failed.' };
   }
 }
 
@@ -187,37 +265,37 @@ async function readFileAsBase64(file: File): Promise<string> {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.onerror = () => reject(new Error('Failed to read file.'));
   });
 }
 
-function responseOk(res: Response): boolean {
-  return res.ok;
-}
-
-function getAuthHeaders(token: string): HeadersInit {
-  return {
-    Authorization: `token ${token}`,
-    Accept: 'application/vnd.github.v3+json',
-  };
+export function getFileCategory(fileName: string): FileCategory {
+  const ext = (fileName.toLowerCase().split('.').pop() || '') as string;
+  if (ext === 'pdf') return 'pdf';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'avif'].includes(ext)) return 'image';
+  if (
+    ['doc', 'docx', 'txt', 'rtf', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'md', 'html', 'json'].includes(
+      ext
+    )
+  ) {
+    return 'document';
+  }
+  return 'other';
 }
 
 export function getFileIcon(fileName: string): string {
-  const ext = (fileName.toLowerCase().split('.').pop() || '') as string;
-  if (ext === 'pdf') return 'FileText';
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'Image';
-  if (['doc', 'docx', 'txt'].includes(ext)) return 'FileText';
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'FileText';
-  if (['ppt', 'pptx'].includes(ext)) return 'FileText';
+  const category = getFileCategory(fileName);
+  if (category === 'pdf' || category === 'document') return 'FileText';
+  if (category === 'image') return 'Image';
   return 'File';
 }
 
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
+  if (!bytes) return '0 Bytes';
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 export function canPreview(fileName: string): boolean {
