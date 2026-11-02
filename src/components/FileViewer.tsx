@@ -161,8 +161,10 @@ export default function FileViewer({ file, onClose, onDelete, isOwner = true }: 
                   <embed
                     type="application/pdf"
                     src={pdfBlobUrl}
-                    className="w-full h-[62vh] rounded-lg border border-border bg-white"
+                    className="w-full h-[65vh] rounded-lg border border-border bg-white"
                     title={file.name}
+                    width="100%"
+                    height="100%"
                   />
                 </>
               ) : (

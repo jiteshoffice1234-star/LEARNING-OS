@@ -114,9 +114,9 @@ export default function CalendarPage() {
   const weekView = (
     <div className="glass-card rounded-xl p-3">
       <div className="flex items-center justify-between mb-4">
-        <button onClick={() => setCurrentDate(new Date(addDaysISO(formatDay(currentDate), -7)))} className="p-2 rounded-lg hover:bg-elevated"><ChevronLeft className="w-5 h-5" /></button>
+        <button onClick={() => setCurrentDate(new Date(addDaysISO(formatDay(currentDate), -7)))} className="p-2 rounded-lg hover:bg-elevated cursor-pointer"><ChevronLeft className="w-5 h-5" /></button>
         <h2 className="text-lg font-semibold text-text">{formatDay(weekDays[0])} to {formatDay(weekDays[6])}</h2>
-        <button onClick={() => setCurrentDate(new Date(addDaysISO(formatDay(currentDate), 7)))} className="p-2 rounded-lg hover:bg-elevated"><ChevronRight className="w-5 h-5" /></button>
+        <button onClick={() => setCurrentDate(new Date(addDaysISO(formatDay(currentDate), 7)))} className="p-2 rounded-lg hover:bg-elevated cursor-pointer"><ChevronRight className="w-5 h-5" /></button>
       </div>
       <div className="grid grid-cols-7 gap-1">
         {weekDays.map((d) => {
@@ -153,9 +153,9 @@ export default function CalendarPage() {
   const monthView = (
     <div className="glass-card rounded-xl p-3">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronLeft className="w-5 h-5" /></button>
+        <button onClick={() => setCurrentDate(new Date(year, month - 1, 1))} className="p-2 rounded-lg hover:bg-elevated cursor-pointer"><ChevronLeft className="w-5 h-5" /></button>
         <h2 className="text-lg font-semibold text-text">{monthName}</h2>
-        <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-2 rounded-lg hover:bg-elevated"><ChevronRight className="w-5 h-5" /></button>
+        <button onClick={() => setCurrentDate(new Date(year, month + 1, 1))} className="p-2 rounded-lg hover:bg-elevated cursor-pointer"><ChevronRight className="w-5 h-5" /></button>
       </div>
       <div className="grid grid-cols-7 gap-1 mb-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
@@ -169,7 +169,7 @@ export default function CalendarPage() {
           const dayEvents = getEventsForDay(dateStr);
           const isToday = dateStr === todayStr;
           return (
-            <button key={day} type="button" onClick={() => openDay(dateStr)} className="aspect-square rounded-lg p-1 flex flex-col items-center justify-start hover:bg-elevated/50">
+            <button key={day} type="button" onClick={() => openDay(dateStr)} className="aspect-square rounded-lg p-1 flex flex-col items-center justify-start hover:bg-elevated/50 cursor-pointer">
               <span className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-text'}`}>{day}</span>
               {isToday && <span className="w-1.5 h-1.5 rounded-full bg-primary mt-0.5" />}
               {dayEvents.length > 0 && (
@@ -213,8 +213,8 @@ export default function CalendarPage() {
             </div>
           ))}
           {getEventsForDay(dayOpen).length === 0 && <div className="text-center py-6 text-xs text-muted">No events on {dayOpen}. Add one below.</div>}
-          <button type="button" onClick={() => { setShowAdd(true); setNewEvent((p) => ({ ...p, date: dayOpen })); }} className="mt-4 flex-1 px-4 py-2.5 rounded-lg bg-primary text-white">Add Event</button>
-          <button type="button" onClick={() => setDayOpen(null)} className="mt-2 flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text">Close</button>
+          <button type="button" onClick={() => { setShowAdd(true); setNewEvent((p) => ({ ...p, date: dayOpen })); }} className="mt-4 flex-1 px-4 py-2.5 rounded-lg bg-primary text-white cursor-pointer">Add Event</button>
+          <button type="button" onClick={() => setDayOpen(null)} className="mt-2 flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text cursor-pointer">Close</button>
         </Modal>
       )}
 
@@ -277,7 +277,7 @@ export default function CalendarPage() {
             </div>
             <div className="flex gap-2 mt-4">
               <button type="button" onClick={() => { setShowAdd(false); resetEventForm(); }} className="flex-1 px-4 py-2.5 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors">Cancel</button>
-              <button type="button" onClick={() => handleAddEvent(newEvent.date)} disabled={!newEvent.title.trim()} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors">Create Event</button>
+              <button type="button" onClick={() => handleAddEvent(newEvent.date)} disabled={!newEvent.title.trim()} className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 transition-colors cursor-pointer">Create Event</button>
             </div>
           </div>
         </Modal>

@@ -245,7 +245,7 @@ export default function Roadmap() {
             <button
               key={d}
               onClick={() => setDuration(d)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                 duration === d ? 'bg-elevated text-text' : 'text-muted hover:text-text'
               }`}
             >
@@ -256,13 +256,13 @@ export default function Roadmap() {
         <div className="flex items-center gap-1 bg-elevated/50 rounded-lg p-1">
           <button
             onClick={() => setViewMode('gantt')}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${viewMode === 'gantt' ? 'bg-primary/15 text-primary' : 'text-muted'}`}
+            className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${viewMode === 'gantt' ? 'bg-primary/15 text-primary' : 'text-muted'}`}
           >
             Gantt
           </button>
           <button
             onClick={() => setViewMode('timeline')}
-            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${viewMode === 'timeline' ? 'bg-primary/15 text-primary' : 'text-muted'}`}
+            className={`px-3 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${viewMode === 'timeline' ? 'bg-primary/15 text-primary' : 'text-muted'}`}
           >
             Timeline
           </button>
