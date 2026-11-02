@@ -1,4 +1,12 @@
-import { usePersistentState, isDataWiped, store } from './storage';
+import { readValue, writeValue, removeValue } from './storage';
+
+export interface GitHubConfig {
+  token: string;
+  owner: string;
+  repo: string;
+  branch: string;
+  folder: string;
+}
 
 export interface GitHubFile {
   id: string;
@@ -13,26 +21,12 @@ export interface GitHubFile {
   sha: string;
 }
 
-export interface GitHubConfig {
-  token: string;
-  owner: string;
-  repo: string;
-  branch: string;
-  folder: string;
-}
-
-export interface GitHubConfigState {
-  configured: boolean;
-  config: GitHubConfig | null;
-  error: string | null;
-}
-
-const GITHUB_CONFIG_KEY = 'githubConfig';
-const GITHUB_FILES_KEY = 'githubFiles';
+const GH_CONFIG_KEY = 'githubConfig';
+const GITHUB_API = 'https://api.github.com';
 
 export function getGitHubConfig(): GitHubConfig | null {
   try {
-    const raw = localStorage.getItem(GITHUB_CONFIG_KEY);
+    const raw = localStorage.getItem(GH_CONFIG_KEY);
     if (!raw) return null;
     return JSON.parse(raw) as GitHubConfig;
   } catch {
@@ -41,270 +35,173 @@ export function getGitHubConfig(): GitHubConfig | null {
 }
 
 export function saveGitHubConfig(config: GitHubConfig) {
-  localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(config));
+  localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(config));
 }
 
 export function clearGitHubConfig() {
-  localStorage.removeItem(GITHUB_CONFIG_KEY);
+  localStorage.removeItem(GH_CONFIG_KEY);
 }
 
 export function isGitHubConfigured(): boolean {
   return getGitHubConfig() !== null;
 }
 
-/**
- * Get GitHub API headers with auth
- */
-function getAuthHeaders(token: string): HeadersInit {
+function headers(token: string): HeadersInit {
   return {
     Authorization: `token ${token}`,
     Accept: 'application/vnd.github.v3+json',
-    'Content-Type': 'application/json',
   };
 }
 
-/**
- * List all files in the GitHub folder
- */
 export async function listGitHubFiles(): Promise<GitHubFile[]> {
-  const config = getGitHubConfig();
-  if (!config) return [];
+  const cfg = getGitHubConfig();
+  if (!cfg) return [];
 
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.folder}?ref=${config.branch}`,
-      {
-        headers: getAuthHeaders(config.token),
-      }
+    const res = await fetch(
+      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.folder}?ref=${cfg.branch}`,
+      { headers: headers(cfg.token) }
     );
-
-    if (!response.ok) {
-      if (response.status === 401) throw new Error('Invalid GitHub token');
-      if (response.status === 404) throw new Error('Repository or folder not found');
-      throw new Error(`GitHub API error: ${response.status}`);
+    if (!responseOk(res)) {
+      if (res.status === 404) return []; // folder doesn't exist yet
+      throw new Error(`GitHub API: ${res.status}`);
     }
-
-    const data: Array<{
-      name: string;
-      path: string;
-      size: number;
-      type: string;
-      url: string;
-      download_url: string | null;
-      html_url: string;
-      sha: string;
-    }> = await response.json();
-
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
     return data
-      .filter((item) => item.type === 'file')
-      .map((item) => ({
-        id: item.sha,
-        name: item.name,
-        path: item.path,
-        size: item.size,
-        type: item.type,
-        url: item.url,
-        download_url: item.download_url!,
-        html_url: item.html_url,
+      .filter((f: any) => f.type === 'file')
+      .map((f: any) => ({
+        id: f.sha,
+        name: f.name,
+        path: f.path,
+        size: f.size || 0,
+        type: f.type,
+        url: f.html_url,
+        download_url: f.download_url || f.url,
+        html_url: f.html_url,
         uploaded_at: new Date().toISOString(),
-        sha: item.sha,
-      }))
-      .sort((a, b) => (a.name < b.name ? -1 : 1));
-  } catch (error) {
-    console.error('GitHub list error:', error);
+        sha: f.sha,
+      }));
+  } catch (e) {
+    console.error('GitHub list error:', e);
     return [];
   }
 }
 
-/**
- * Upload a file to GitHub
- */
-export async function uploadGitHubFile(
-  file: File,
-  onProgress?: (loaded: number, total: number) => void
-): Promise<{ ok: true; file: GitHubFile } | { ok: false; error: string }> {
-  const config = getGitHubConfig();
-  if (!config) {
-    return { ok: false, error: 'GitHub not configured. Please add your GitHub token in Settings.' };
-  }
+export async function uploadGitHubFile(file: File): Promise<{ ok: true; file: GitHubFile } | { ok: false; error: string }> {
+  const cfg = getGitHubConfig();
+  if (!cfg) return { ok: false, error: 'GitHub not configured. Go to Settings → Cloud Storage.' };
+  if (!file) return { ok: false, error: 'No file provided' };
 
-  if (!file) {
-    return { ok: false, error: 'No file provided' };
-  }
-
-  // Read file as base64
-  const fileContent = await readFileAsBase64(file);
-  const content = fileContent.split(',')[1]; // Remove data URL prefix
-
-  const path = `${config.folder}/${file.name}`;
-  const message = `Add ${file.name}`;
+  const path = `${cfg.folder}/${file.name}`;
+  const content = await readFileAsBase64(file);
+  const b64 = content.split(',')[1];
 
   try {
-    const response = await fetch(
-      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`,
+    // Check if file exists to get SHA for update
+    const existing = await fetch(
+      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`,
+      { headers: headers(cfg.token) }
+    );
+
+    const body: any = {
+      message: `Add ${file.name}`,
+      content: b64,
+      branch: cfg.branch,
+    };
+
+    if (existingResponse.ok) {
+      const existing = await existingResponse.json();
+      body.sha = existing.sha;
+      body.message = `Update ${file.name}`;
+    }
+
+    const res = await fetch(
+      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`,
       {
         method: 'PUT',
-        headers: getAuthHeaders(config.token),
-        body: JSON.stringify({
-          message,
-          content,
-          branch: config.branch,
-        }),
+        headers: getAuthHeaders(cfg.token),
+        body: JSON.stringify(body),
       }
     );
 
-    if (response.status === 409) {
-      // File already exists, we need to get SHA and update
-      const existingResponse = await fetch(
-        `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}?ref=${config.branch}`,
-        {
-          headers: getAuthHeaders(config.token),
-        }
-      );
-
-      if (!existingResponse.ok) {
-        return { ok: false, error: 'File already exists and could not be updated' };
-      }
-
-      const existingData: { sha: string } = await existingResponse.json();
-
-      const updateResponse = await fetch(
-        `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${path}`,
-        {
-          method: 'PUT',
-          headers: getAuthHeaders(config.token),
-          body: JSON.stringify({
-            message: `Update ${file.name}`,
-            content,
-            sha: existingData.sha,
-            branch: config.branch,
-          }),
-        }
-      );
-
-      if (!updateResponse.ok) {
-        return { ok: false, error: `Failed to update file: ${updateResponse.status}` };
-      }
-
-      const result = await updateResponse.json();
-      return {
-        ok: true,
-        file: {
-          id: result.content.sha,
-          name: result.content.name,
-          path: result.content.path,
-          size: file.size,
-          type: file.type,
-          url: result.content.url,
-          download_url: result.content.download_url,
-          html_url: result.content.html_url,
-          uploaded_at: new Date().toISOString(),
-          sha: result.content.sha,
-        },
-      };
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      return { ok: false, error: err.message || `Upload failed: ${res.status}` };
     }
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return { ok: false, error: errorData.message || `Upload failed: ${response.status}` };
-    }
-
-    const result = await response.json();
+    const data = await res.json();
     return {
       ok: true,
       file: {
-        id: result.content.sha,
-        name: result.content.name,
-        path: result.content.path,
+        id: data.content.sha,
+        name: data.content.name,
+        path: data.content.path,
         size: file.size,
         type: file.type,
-        url: result.content.url,
-        download_url: result.content.download_url,
-        html_url: result.content.html_url,
+        url: data.content.html_url,
+        download_url: data.content.download_url,
+        html_url: data.content.html_url,
         uploaded_at: new Date().toISOString(),
-        sha: result.content.sha,
+        sha: data.content.sha,
       },
     };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Upload failed' };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Upload failed' };
   }
 }
 
-/**
- * Delete a file from GitHub
- */
-export async function deleteGitHubFile(fileId: string, filePath: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  const config = getGitHubConfig();
-  if (!config) {
-    return { ok: false, error: 'GitHub not configured' };
-  }
+export async function deleteGitHubFile(path: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const cfg = getGitHubConfig();
+  if (!cfg) return { ok: false, error: 'GitHub not configured' };
 
-  // First get the current SHA of the file
   try {
-    const existingResponse = await fetch(
-      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${filePath}?ref=${config.branch}`,
-      {
-        headers: getAuthHeaders(config.token),
-      }
+    const existing = await fetch(
+      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${cfg.branch}`,
+      { headers: headers(cfg.token) }
     );
+    if (!existing.ok) return { ok: false, error: 'File not found on GitHub' };
+    const existingData: { sha: string } = await existing.json();
 
-    if (!existingResponse.ok) {
-      return { ok: false, error: 'File not found on GitHub' };
-    }
-
-    const existingData: { sha: string } = await existingResponse.json();
-
-    const deleteResponse = await fetch(
-      `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${filePath}`,
+    const res = await fetch(
+      `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${path}`,
       {
         method: 'DELETE',
-        headers: getAuthHeaders(config.token),
+        headers: getAuthHeaders(cfg.token),
         body: JSON.stringify({
-          message: `Delete ${filePath}`,
+          message: `Delete ${path}`,
           sha: existingData.sha,
-          branch: config.branch,
+          branch: cfg.branch,
         }),
       }
     );
-
-    if (!deleteResponse.ok) {
-      return { ok: false, error: `Delete failed: ${deleteResponse.status}` };
-    }
-
+    if (!res.ok) return { ok: false, error: `Delete failed: ${res.status}` };
     return { ok: true };
-  } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Delete failed' };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Delete failed' };
   }
 }
 
-/**
- * Read file as base64 data URL
- */
-function readFileAsBase64(file: File): Promise<string> {
+async function readFileAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
+    reader.onerror = () => reject(new Error('Failed to read file'));
   });
 }
 
-/**
- * Get file type category
- */
-export function getFileCategory(fileName: string): 'pdf' | 'image' | 'document' | 'other' {
-  const ext = fileName.toLowerCase().split('.').pop() || '';
-  if (ext === 'pdf') return 'pdf';
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) return 'image';
-  if (['doc', 'docx', 'txt', 'rtf', 'odt'].includes(ext)) return 'document';
-  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'document';
-  if (['ppt', 'pptx'].includes(ext)) return 'document';
-  return 'other';
+function responseOk(res: Response): boolean {
+  return res.ok;
 }
 
-/**
- * Get file icon
- */
+function getAuthHeaders(token: string): HeadersInit {
+  return {
+    Authorization: `token ${token}`,
+    Accept: 'application/vnd.github.v3+json',
+  };
+}
+
 export function getFileIcon(fileName: string): string {
   const ext = fileName.toLowerCase().split('.').pop() || '';
   if (ext === 'pdf') return 'FileText';
@@ -315,29 +212,19 @@ export function getFileIcon(fileName: string): string {
   return 'File';
 }
 
-/**
- * Get display size
- */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
-  const dm = 2;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
 
-/**
- * Check if a file can be previewed inline
- */
 export function canPreview(fileName: string): boolean {
   const ext = fileName.toLowerCase().split('.').pop() || '';
   return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'txt', 'md', 'html'].includes(ext);
 }
 
-/**
- * Get a download URL for a file
- */
 export function getFileDownloadUrl(file: GitHubFile): string {
   return file.download_url;
 }
