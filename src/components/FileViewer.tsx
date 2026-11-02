@@ -75,14 +75,26 @@ export default function FileViewer({ file, onClose, onDelete, isOwner = true }: 
   const isImage = file.type === 'image';
   const canOpen = Boolean(file.download_url);
 
-  // Fetch PDF as a blob and create a local object URL. Serving it from the
-  // browser itself bypasses GitHub's Content-Disposition: attachment header,
-  // so the PDF renders inline instead of triggering a download.
+  // Fetch PDF as a blob and create a local object URL. Uses the raw GitHub
+  // content URL (raw.githubusercontent.com) instead of the download_url, which
+  // forces Content-Disposition: attachment. This causes the PDF to render
+  // inline via the <embed> tag rather than triggering a download.
   const loadPdfBlob = async () => {
     if (!file.download_url) return;
+    // Construct raw content URL from the download_url path.
+    // GitHub's download_url format: https://api.github.com/repos/.../contents/...
+    // Raw content URL format: https://raw.githubusercontent.com/.../...
+    const rawUrl = file.download_url.replace('https://api.github.com/repos/', 'https://raw.githubusercontent.com/')
+      .replace('/contents', '')
+      .replace(/\?.*$/, ''); // strip query params
     setPdfLoading(true);
     try {
-      const res = await fetch(file.download_url);
+      const res = await fetch(rawUrl, {
+        headers: {
+          // Accept PDF explicitly so GitHub serves it with correct content type
+          'Accept': 'application/pdf',
+        },
+      });
       if (!res.ok) throw new Error('Failed to fetch PDF');
       const blob = await res.blob();
       setPdfBlobUrl(URL.createObjectURL(blob));
