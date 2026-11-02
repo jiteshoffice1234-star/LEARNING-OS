@@ -62,7 +62,7 @@ export async function listGitHubFiles(): Promise<GitHubFile[]> {
       `${GITHUB_API}/repos/${cfg.owner}/${cfg.repo}/contents/${cfg.folder}?ref=${cfg.branch}`,
       { headers: headers(cfg.token) }
     );
-    if (!responseOk(res)) {
+    if (!res.ok) {
       if (res.status === 404) return []; // folder doesn't exist yet
       throw new Error(`GitHub API: ${res.status}`);
     }
@@ -110,9 +110,9 @@ export async function uploadGitHubFile(file: File): Promise<{ ok: true; file: Gi
       branch: cfg.branch,
     };
 
-    if (existingResponse.ok) {
-      const existing = await existingResponse.json();
-      body.sha = existing.sha;
+    if (existing.ok) {
+      const existingData: { sha: string } = await existing.json();
+      body.sha = existingData.sha;
       body.message = `Update ${file.name}`;
     }
 
@@ -203,7 +203,7 @@ function getAuthHeaders(token: string): HeadersInit {
 }
 
 export function getFileIcon(fileName: string): string {
-  const ext = fileName.toLowerCase().split('.').pop() || '';
+  const ext = (fileName.toLowerCase().split('.').pop() || '') as string;
   if (ext === 'pdf') return 'FileText';
   if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return 'Image';
   if (['doc', 'docx', 'txt'].includes(ext)) return 'FileText';
@@ -221,7 +221,7 @@ export function formatFileSize(bytes: number): string {
 }
 
 export function canPreview(fileName: string): boolean {
-  const ext = fileName.toLowerCase().split('.').pop() || '';
+  const ext = (fileName.toLowerCase().split('.').pop() || '') as string;
   return ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'txt', 'md', 'html'].includes(ext);
 }
 

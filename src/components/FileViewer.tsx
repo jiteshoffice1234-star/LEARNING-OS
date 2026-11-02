@@ -1,5 +1,5 @@
 import { FileText, Image, File, X, Download, ExternalLink, Trash2, CheckCircle2 } from 'lucide-react';
-import { getFileIcon, getFileCategory, formatFileSize, canPreview } from '../lib/githubFiles';
+import { getFileIcon, formatFileSize, canPreview } from '../lib/githubFiles';
 
 interface FileViewerProps {
   file: {
@@ -25,7 +25,7 @@ export default function FileViewer({
   onDelete,
   isOwner = false,
 }: FileViewerProps) {
-  const fileType = getFileCategory(file.name);
+  const fileType = getFileIcon(file.name);
   const fileIcon = getFileIcon(file.name);
   const fileSize = formatFileSize(file.size);
   const canPreviewFile = canPreview(file.name);

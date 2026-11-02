@@ -8,7 +8,7 @@ import {
   listGitHubFiles, uploadGitHubFile, deleteGitHubFile,
   getGitHubConfig, saveGitHubConfig, clearGitHubConfig,
   isGitHubConfigured, type GitHubFile,
-  getFileIcon, getFileCategory, formatFileSize, canPreview,
+  getFileIcon, formatFileSize, canPreview,
 } from '../lib/githubFiles';
 import FileViewer from '../components/FileViewer';
 
@@ -85,7 +85,7 @@ export default function Vault() {
   };
 
   const handleDeleteGH = async (file: GitHubFile) => {
-    const result = await deleteGitHubFile(file.id, file.path);
+    const result = await deleteGitHubFile(file.path);
     if (result.ok) {
       setGhFiles((prev) => prev.filter((f) => f.id !== file.id));
       setNotice({ kind: 'ok', text: 'Deleted from GitHub.' });
