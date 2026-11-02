@@ -157,11 +157,14 @@ export default function FileViewer({ file, onClose, onDelete, isOwner = true }: 
                   <p className="text-xs text-muted">Loading PDF…</p>
                 </div>
               ) : pdfBlobUrl ? (
-                <iframe
-                  src={pdfBlobUrl}
-                  className="w-full h-[62vh] rounded-lg border border-border bg-white"
-                  title={file.name}
-                />
+                <>
+                  <embed
+                    type="application/pdf"
+                    src={pdfBlobUrl}
+                    className="w-full h-[62vh] rounded-lg border border-border bg-white"
+                    title={file.name}
+                  />
+                </>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <p className="text-xs text-muted">Could not load PDF preview.</p>

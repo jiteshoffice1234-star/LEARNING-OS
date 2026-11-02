@@ -131,6 +131,38 @@ export default function Roadmap() {
     );
   }
 
+  // Guard: no roadmap selected (empty state after wipe or before creating one)
+  if (!selectedRoadmap || roadmaps.length === 0) {
+    return (
+      <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-text">Learning Roadmap</h1>
+            <p className="text-sm text-muted mt-1">Plan and track your skill development journey</p>
+          </div>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Roadmap</span>
+          </button>
+        </div>
+        <div className="glass-card rounded-xl p-8 text-center py-16">
+          <Target className="w-12 h-12 text-muted/30 mx-auto mb-3" />
+          <h3 className="text-sm font-bold text-text">No roadmaps yet</h3>
+          <p className="text-xs text-muted mt-1">Create your first roadmap to plan your learning journey.</p>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="mt-4 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            Create your first roadmap
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const itemsForRoadmap = items.filter((i) => selectedRoadmap.skills.includes(i.skill));
 
   // --- Duration actually filters the timeline ---
@@ -197,7 +229,7 @@ export default function Roadmap() {
             key={rm.id}
             onClick={() => setSelectedRoadmap(rm)}
             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              selectedRoadmap.id === rm.id ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-elevated/50 text-muted hover:text-text'
+              selectedRoadmap?.id === rm.id ? 'bg-primary/15 text-primary border border-primary/30' : 'bg-elevated/50 text-muted hover:text-text'
             }`}
           >
             {rm.name}
@@ -259,9 +291,9 @@ export default function Roadmap() {
             </div>
           </div>
           <button
-            onClick={(e) => { e.stopPropagation(); handleDeleteRoadmap(selectedRoadmap.id); }}
+            onClick={(e) => { e.stopPropagation(); handleDeleteRoadmap(selectedRoadmap?.id!); }}
             disabled={!selectedRoadmap || roadmaps.length <= 1}
-            aria-label={`Delete roadmap: ${selectedRoadmap.name}`}
+            aria-label={`Delete roadmap: ${selectedRoadmap?.name}`}
             className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
               roadmaps.length <= 1 ? 'text-muted/50 cursor-not-allowed' : 'text-danger hover:text-danger hover:bg-danger/10'
             }`}
