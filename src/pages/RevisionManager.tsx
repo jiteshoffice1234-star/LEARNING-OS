@@ -1,10 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePersistentState, isDataWiped } from '../lib/storage';
 import { todayISO, addDaysISO } from '../lib/dates';
-import { 
-  RotateCcw, Calendar, CheckCircle2, Clock, AlertTriangle, 
-  Plus, ChevronRight, BookOpen, Filter, MoreHorizontal
-} from 'lucide-react';
+import { RotateCcw, Calendar, CheckCircle2, Clock, AlertTriangle, Plus, ChevronRight, BookOpen, Filter, Trash2 } from 'lucide-react';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 interface Revision {
   id: string;
@@ -18,16 +16,7 @@ interface Revision {
   interval: number;
 }
 
-const initialRevisions: Revision[] = [
-  { id: '1', subject: 'Algorithms', chapter: 'Dynamic Programming', cycle: 2, dueDate: '2026-11-02', status: 'upcoming', interval: 7 },
-  { id: '2', subject: 'Machine Learning', chapter: 'Neural Networks', cycle: 1, dueDate: '2026-11-03', status: 'upcoming', interval: 3 },
-  { id: '3', subject: 'Database Systems', chapter: 'Normalization', cycle: 3, dueDate: '2026-10-30', status: 'overdue', interval: 14 },
-  { id: '4', subject: 'Operating Systems', chapter: 'Process Scheduling', cycle: 1, dueDate: '2026-11-05', status: 'upcoming', interval: 3 },
-  { id: '5', subject: 'Python', chapter: 'Decorators', cycle: 4, dueDate: '2026-10-28', completedDate: '2026-10-27', status: 'completed', interval: 30 },
-  { id: '6', subject: 'Computer Networks', chapter: 'TCP/IP', cycle: 2, dueDate: '2026-11-08', status: 'upcoming', interval: 7 },
-  { id: '7', subject: 'Algorithms', chapter: 'Graph Theory', cycle: 1, dueDate: '2026-11-01', status: 'overdue', interval: 3 },
-  { id: '8', subject: 'System Design', chapter: 'Load Balancing', cycle: 2, dueDate: '2026-11-10', status: 'postponed', interval: 7 },
-];
+const initialRevisions: Revision[] = [];
 
 export default function RevisionManager() {
   const wiped = isDataWiped();
@@ -35,6 +24,7 @@ export default function RevisionManager() {
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'overdue' | 'completed'>('all');
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedRevision, setSelectedRevision] = useState<Revision | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // New-revision form state
   const [newSubject, setNewSubject] = useState('Algorithms');
@@ -43,8 +33,18 @@ export default function RevisionManager() {
   const [newInterval, setNewInterval] = useState(7);
   const [newDueDate, setNewDueDate] = useState(todayISO());
 
+  // Recalc statuses on mount and whenever date-dependent state changes:
+  // overdue if dueDate < today and not completed/postponed.
+  useEffect(() => {
+    const now = todayISO();
+    setRevisions(prev => prev.map(r => {
+      if (r.status === 'completed' || r.status === 'postponed') return r;
+      return { ...r, status: r.dueDate < now ? 'overdue' : 'upcoming' };
+    }));
+  }, []);
+
   const filtered = revisions.filter(r => filter === 'all' || r.status === filter);
-  
+
   const stats = {
     upcoming: revisions.filter(r => r.status === 'upcoming').length,
     overdue: revisions.filter(r => r.status === 'overdue').length,
@@ -53,24 +53,39 @@ export default function RevisionManager() {
   };
 
   const handleComplete = (id: string) => {
-    setRevisions(revisions.map(r => 
-      r.id === id ? { ...r, status: 'completed' as const, completedDate: new Date().toISOString().split('T')[0] } : r
-    ));
+    setRevisions(prev => prev.map(r => {
+      if (r.id !== id) return r;
+      // Schedule the next revision cycle using the stored interval.
+      const nextDue = addDaysISO(todayISO(), r.interval || 7);
+      return {
+        ...r,
+        status: 'completed' as const,
+        completedDate: todayISO(),
+        dueDate: nextDue,
+        cycle: r.cycle + 1,
+      };
+    }));
     setSelectedRevision(null);
   };
 
-  // Postpone by the revision's own interval instead of a hardcoded date.
   const handlePostpone = (id: string) => {
-    setRevisions(revisions.map(r => 
+    setRevisions(prev => prev.map(r =>
       r.id === id
         ? { ...r, status: 'postponed' as const, dueDate: addDaysISO(todayISO(), r.interval || 7) }
         : r
     ));
+    setSelectedRevision(null);
   };
 
-  const handleDelete = (id: string) => {
-    setRevisions(revisions.filter(r => r.id !== id));
+  const requestDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleDelete = () => {
+    if (!confirmDeleteId) return;
+    setRevisions(prev => prev.filter(r => r.id !== confirmDeleteId));
     setSelectedRevision(null);
+    setConfirmDeleteId(null);
   };
 
   const handleCreate = () => {
@@ -85,7 +100,6 @@ export default function RevisionManager() {
       status: newDueDate && newDueDate < todayISO() ? 'overdue' : 'upcoming',
     };
     setRevisions([revision, ...revisions]);
-    // Reset form
     setNewChapter('');
     setNewCycle(1);
     setNewInterval(7);
@@ -135,9 +149,7 @@ export default function RevisionManager() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize whitespace-nowrap transition-colors ${
-              filter === f ? 'bg-primary/15 text-primary' : 'bg-elevated/50 text-muted hover:text-text'
-            }`}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize whitespace-nowrap transition-colors ${filter === f ? 'bg-primary/15 text-primary' : 'bg-elevated/50 text-muted hover:text-text'}`}
           >
             {f} {f !== 'all' && `(${stats[f]})`}
           </button>
@@ -146,6 +158,9 @@ export default function RevisionManager() {
 
       {/* Revision List */}
       <div className="space-y-1">
+        {filtered.length === 0 && (
+          <p className="text-xs text-muted text-center py-6">No revisions yet. Add one above.</p>
+        )}
         {filtered.map((revision) => (
           <div
             key={revision.id}
@@ -154,27 +169,15 @@ export default function RevisionManager() {
           >
             <div className="flex items-center gap-3 flex-1 min-w-0">
               {/* Cycle Badge */}
-              <div className={`w-8 h-8 rounded flex flex-col items-center justify-center flex-shrink-0 ${
-                revision.status === 'completed' ? 'bg-success/15' :
-                revision.status === 'overdue' ? 'bg-danger/15' :
-                revision.status === 'postponed' ? 'bg-warning/15' : 'bg-primary/15'
-              }`}>
-                <span className={`text-[10px] font-bold ${
-                  revision.status === 'completed' ? 'text-success' :
-                  revision.status === 'overdue' ? 'text-danger' :
-                  revision.status === 'postponed' ? 'text-warning' : 'text-primary'
-                }`}>R{revision.cycle}</span>
+              <div className={`w-8 h-8 rounded flex flex-col items-center justify-center flex-shrink-0 ${revision.status === 'completed' ? 'bg-success/15' : revision.status === 'overdue' ? 'bg-danger/15' : revision.status === 'postponed' ? 'bg-warning/15' : 'bg-primary/15'}`}>
+                <span className={`text-[10px] font-bold ${revision.status === 'completed' ? 'text-success' : revision.status === 'overdue' ? 'text-danger' : revision.status === 'postponed' ? 'text-warning' : 'text-primary'}`}>R{revision.cycle}</span>
               </div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h3 className="text-xs font-medium text-text truncate">{revision.chapter}</h3>
-                  <span className={`text-[9px] px-1 py-0.5 rounded flex-shrink-0 ${
-                    revision.status === 'completed' ? 'bg-success/15 text-success' :
-                    revision.status === 'overdue' ? 'bg-danger/15 text-danger' :
-                    revision.status === 'postponed' ? 'bg-warning/15 text-warning' : 'bg-primary/15 text-primary'
-                  }`}>
+                  <span className={`text-[9px] px-1 py-0.5 rounded flex-shrink-0 ${revision.status === 'completed' ? 'bg-success/15 text-success' : revision.status === 'overdue' ? 'bg-danger/15 text-danger' : revision.status === 'postponed' ? 'bg-warning/15 text-warning' : 'bg-primary/15 text-primary'}`}>
                     {revision.status}
                   </span>
                 </div>
@@ -195,6 +198,13 @@ export default function RevisionManager() {
                 </button>
               )}
             </div>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); requestDelete(revision.id); }}
+              className="p-1.5 rounded text-muted hover:text-danger transition-colors"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
           </div>
         ))}
       </div>
@@ -208,7 +218,7 @@ export default function RevisionManager() {
               <h2 className="text-lg font-bold text-text">Revision Details</h2>
               <button type="button" onClick={() => setSelectedRevision(null)} className="p-1.5 rounded-lg hover:bg-elevated text-muted">✕</button>
             </div>
-            
+
             <div className="space-y-4">
               <div>
                 <p className="text-xs text-muted uppercase tracking-wider mb-1">Chapter</p>
@@ -258,7 +268,7 @@ export default function RevisionManager() {
                 </>
               )}
               <button type="button" 
-                onClick={() => handleDelete(selectedRevision.id)}
+                onClick={() => requestDelete(selectedRevision.id)}
                 className="px-4 py-2.5 rounded-lg bg-danger/15 text-danger text-sm font-medium hover:bg-danger/25 transition-colors"
               >
                 Delete
@@ -346,6 +356,17 @@ export default function RevisionManager() {
             </div>
           </div>
         </div>
+      )}
+
+      {confirmDeleteId && (
+        <ConfirmDialog
+          open={true}
+          title="Delete revision?"
+          message="This will permanently remove this revision from your schedule."
+          confirmLabel="Delete"
+          onConfirm={handleDelete}
+          onClose={() => setConfirmDeleteId(null)}
+        />
       )}
     </div>
   );

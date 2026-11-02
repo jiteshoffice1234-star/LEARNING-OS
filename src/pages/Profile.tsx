@@ -1,76 +1,71 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { usePersistentState, clearAll, isDataWiped, store } from '../lib/storage';
-import { uploadFile } from '../lib/files';
-import { User, Camera, MapPin, Globe, Briefcase, GraduationCap, Target, Edit3, Save, X } from 'lucide-react';
+import { User, MapPin, Globe, Briefcase, GraduationCap, Target, Edit3, Save, X, Trash2 } from 'lucide-react';
+import ConfirmDialog from '../components/ConfirmDialog';
+
+interface ProfileData {
+  name: string;
+  education: string;
+  focus: string;
+  situation: string;
+  goal: string;
+  dailyTime: string;
+  institution: string;
+  qualification: string;
+  country: string;
+  language: string;
+  introduction: string;
+  careerObjective: string;
+}
+
+const defaultProfile: ProfileData = {
+  name: '',
+  education: '',
+  focus: '',
+  situation: '',
+  goal: '',
+  dailyTime: '',
+  institution: '',
+  qualification: '',
+  country: '',
+  language: '',
+  introduction: '',
+  careerObjective: '',
+};
 
 export default function Profile() {
   const wiped = isDataWiped();
   const [isEditing, setIsEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [avatarBusy, setAvatarBusy] = useState(false);
-  const [avatarError, setAvatarError] = useState<string | null>(null);
-  const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const defaultProfile = wiped
-    ? {
-        name: '',
-        education: '',
-        focus: '',
-        situation: '',
-        goal: '',
-        dailyTime: '',
-        institution: '',
-        qualification: '',
-        country: '',
-        language: '',
-        introduction: '',
-        careerObjective: '',
-        avatarUrl: '',
-      }
-    : {
-        name: 'Arjun Kumar',
-        education: 'Undergraduate',
-        focus: 'Computer Science',
-        situation: 'Student',
-        goal: 'Skill Mastery',
-        dailyTime: '4 hours',
-        institution: 'IIT Delhi',
-        qualification: 'B.Tech Computer Science',
-        country: 'India',
-        language: 'English',
-        introduction: 'Passionate about building systems that scale. Currently focused on machine learning and distributed systems.',
-        careerObjective: 'Become a senior ML engineer at a top tech company within 3 years.',
-        avatarUrl: '',
-      };
-
-  const [profile, setProfile] = usePersistentState('profile', defaultProfile);
-
-  /** Upload an avatar image and persist its URL onto the profile. */
-  const handleAvatar = async (file: File | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      setAvatarError('Please choose an image file.');
-      return;
-    }
-    setAvatarBusy(true);
-    setAvatarError(null);
-    const result = await uploadFile(file);
-    setAvatarBusy(false);
-    if (result.ok) {
-      setProfile({ ...profile, avatarUrl: result.file.url });
-    } else {
-      setAvatarError(result.error);
-    }
+  const defaultProfileValue = wiped ? defaultProfile : {
+    ...defaultProfile,
+    name: 'Learner',
+    situation: 'Student',
+    education: 'Undergraduate',
+    focus: 'Computer Science',
+    goal: 'Skill Mastery',
+    dailyTime: '4 hours',
+    country: '',
+    language: 'English',
+    introduction: '',
+    careerObjective: '',
+    institution: '',
+    qualification: '',
   };
+
+  const [profile, setProfile] = usePersistentState<ProfileData>('profile', defaultProfileValue);
 
   // Derive stats from actual stored data
   const tasks = store.get<{ id: string }[]>('tasks', []);
   const skills = store.get<{ id: string }[]>('skills', []);
-  const tests = store.get<{ id: string; date: string }[]>('tests', []);
+  const tests = store.get<{ id: string; date: string; timeTaken?: number }[]>('tests', []);
   const courses = store.get<{ id: string }[]>('courses', []);
   const qualifications = store.get<{ id: string }[]>('qualifications', []);
 
-  // Calculate streak from test dates (consecutive days with activity)
+  const totalHours = tests.reduce((acc, t) => acc + (Number(t.timeTaken) || 0), 0) / 60;
+
+  // Calculate streak from test dates
   let streak = 0;
   if (tests.length > 0 && !wiped) {
     const sorted = tests.map(t => t.date).sort().reverse();
@@ -95,31 +90,10 @@ export default function Profile() {
         }
       }
     }
-    if (!foundToday && sorted.length > 0) {
-      // Check if yesterday is in dates
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().slice(0, 10);
-      if (sorted.includes(yesterdayStr)) {
-        streak = 1;
-        checkDate = new Date(yesterdayStr);
-        checkDate.setDate(checkDate.getDate() - 1);
-        for (let i = 1; i < sorted.length; i++) {
-          const expected = new Date(checkDate);
-          expected.setDate(expected.getDate() - 1);
-          if (sorted[i] === expected.toISOString().slice(0, 10)) {
-            streak++;
-            checkDate = expected;
-          } else {
-            break;
-          }
-        }
-      }
-    }
   }
 
   const stats = {
-    totalHours: tests.reduce((acc, t) => acc + (t as any).timeTaken || 0, 0) / 60,
+    totalHours: Math.round(totalHours),
     streak,
     courses: courses.length,
     skills: skills.length,
@@ -138,8 +112,7 @@ export default function Profile() {
           </div>
           <button type="button" 
             onClick={() => setIsEditing(!isEditing)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isEditing ? 'bg-success text-white hover:bg-success/90' : 'bg-elevated text-text hover:bg-elevated/80'}`}
-          >
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isEditing ? 'bg-success text-white hover:bg-success/90' : 'bg-elevated text-text hover:bg-elevated/80'}`}>
             {isEditing ? (
               <><Save className="w-4 h-4" /> Save Changes</>
             ) : (
@@ -151,38 +124,9 @@ export default function Profile() {
         {/* Profile Card */}
         <div className="glass-card rounded-2xl p-6 mb-6">
           <div className="flex flex-col sm:flex-row items-center gap-6">
-            {/* Avatar */}
-            <div className="relative">
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => {
-                  handleAvatar(e.target.files?.[0]);
-                  e.target.value = '';
-                }}
-              />
-              {profile.avatarUrl ? (
-                <img
-                  src={profile.avatarUrl}
-                  alt={`${profile.name}'s avatar`}
-                  className="w-24 h-24 rounded-2xl object-cover shadow-lg shadow-primary/25"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-primary/25">
-                  {profile.name ? profile.name.split(' ').map((n) => n[0]).join('') : 'LU'}
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => avatarInputRef.current?.click()}
-                disabled={avatarBusy}
-                aria-label="Change profile photo"
-                className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-elevated border border-border flex items-center justify-center hover:bg-primary/20 disabled:opacity-50 transition-colors"
-              >
-                <Camera className="w-4 h-4 text-muted" />
-              </button>
+            {/* Avatar (initials, no upload — keeps the bundle small) */}
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-primary/25">
+              {profile.name ? profile.name.split(' ').map((n) => n[0]).join('') : 'LU'}
             </div>
 
             {/* Info */}
@@ -198,9 +142,6 @@ export default function Profile() {
                 <h2 className="text-xl font-bold text-text">{profile.name || 'Learner'}</h2>
               )}
               <p className="text-sm text-muted mt-1">{profile.situation} • {profile.education}</p>
-              {avatarError && (
-                <p className="text-[11px] text-danger mt-1">{avatarError}</p>
-              )}
               <div className="flex items-center justify-center sm:justify-start gap-4 mt-3 text-xs text-muted">
                 <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {profile.country}</span>
                 <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> {profile.language}</span>
@@ -212,7 +153,7 @@ export default function Profile() {
         {/* Stats */}
         <div className="grid grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           {[
-            { label: 'Hours', value: Math.round(stats.totalHours), color: 'text-primary' },
+            { label: 'Hours', value: stats.totalHours, color: 'text-primary' },
             { label: 'Streak', value: `${stats.streak}d`, color: 'text-warning' },
             { label: 'Courses', value: stats.courses, color: 'text-success' },
             { label: 'Skills', value: stats.skills, color: 'text-accent' },
@@ -238,7 +179,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Optional Details */}
+        {/* Additional Information */}
         <div className="glass-card rounded-xl p-5 mb-6">
           <h3 className="text-sm font-semibold text-text mb-4">Additional Information</h3>
           <div className="space-y-4">
@@ -277,37 +218,27 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Danger Zone */}
+        {/* Delete All Data (shared with Settings) */}
         <div className="glass-card rounded-xl p-5 border border-danger/20">
-          <h3 className="text-sm font-semibold text-danger mb-2">Danger Zone</h3>
-          <p className="text-xs text-muted mb-4">These actions cannot be undone.</p>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" 
-              onClick={() => {
-                try { localStorage.removeItem('learningos:v1:onboardingComplete'); } catch { /* ignore */ }
-                window.location.reload();
-              }}
-              className="px-4 py-2 rounded-lg bg-danger/15 text-danger text-xs font-medium hover:bg-danger/25 transition-colors"
-            >
-              Reset Onboarding
-            </button>
-            <button type="button" 
-              onClick={() => {
-                if (!confirmDelete) {
-                  setConfirmDelete(true);
-                  window.setTimeout(() => setConfirmDelete(false), 5000);
-                  return;
-                }
-                clearAll();
-                window.location.reload();
-              }}
-              className="px-4 py-2 rounded-lg bg-danger/15 text-danger text-xs font-medium hover:bg-danger/25 transition-colors"
-            >
-              {confirmDelete ? 'Click again to confirm delete' : 'Delete All Data'}
-            </button>
-          </div>
+          <h3 className="text-sm font-semibold text-danger mb-2">Delete All Data</h3>
+          <p className="text-xs text-muted mb-4">This erases all learning data from this browser. Your settings and GitHub connection are kept.</p>
+          <button type="button" 
+            onClick={() => setConfirmDelete(true)}
+            className="px-4 py-2 rounded-lg bg-danger/15 text-danger text-xs font-medium hover:bg-danger/25 transition-colors"
+          >
+            Delete All Data
+          </button>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete all learning data?"
+        message="This permanently erases your courses, sessions, tests, notes, goals and files from this browser. Your theme, daily target and GitHub connection are kept. This cannot be undone."
+        confirmLabel="Delete Everything"
+        onConfirm={() => { clearAll(); setConfirmDelete(false); }}
+        onClose={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }

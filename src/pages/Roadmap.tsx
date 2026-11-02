@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usePersistentState, isDataWiped } from '../lib/storage';
+import { todayISO } from '../lib/dates';
 import Modal, { ModalActions } from '../components/Modal';
 import {
   Target, Calendar, TrendingUp, AlertTriangle, CheckCircle2,
@@ -145,6 +146,7 @@ export default function Roadmap() {
   const startDate = new Date(selectedRoadmap.startDate);
   const endDate = new Date(selectedRoadmap.endDate);
   const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  const today = todayISO();
 
   const getPosition = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -286,7 +288,7 @@ export default function Roadmap() {
               {/* Today marker */}
               <div
                 className="absolute top-0 bottom-0 w-px bg-primary/50"
-                style={{ left: `${getPosition('2026-10-31')}%` }}
+                style={{ left: `${getPosition(today)}%` }}
               >
                 <div className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-primary" />
               </div>
@@ -364,7 +366,7 @@ export default function Roadmap() {
             <div className="relative mt-4 h-4">
               <div
                 className="absolute text-[10px] text-primary font-medium"
-                style={{ left: `${getPosition('2026-10-31')}%` }}
+                style={{ left: `${getPosition(today)}%` }}
               >
                 Today
               </div>

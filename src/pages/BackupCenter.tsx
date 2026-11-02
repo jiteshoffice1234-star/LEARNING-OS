@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { 
-  Database, Download, Upload, HardDrive, Shield, Clock, 
+import {
+  Database, Download, Upload, HardDrive, Shield, Clock,
   CheckCircle2, AlertCircle, FileArchive, Trash2, RefreshCw, Lock
 } from 'lucide-react';
 import {
@@ -17,10 +17,9 @@ interface BackupRecord {
   date: string;
   time: string;
   size: string;
-  type: 'auto' | 'manual';
+  type: 'manual';
   files: number;
-  /** Full snapshot taken at backup time, so each row can be re-downloaded/restored. */
-  payload: unknown;
+  /** Metadata only — the full payload is in the downloaded JSON file, not stored here. */
 }
 
 export default function BackupCenter() {
@@ -59,7 +58,7 @@ export default function BackupCenter() {
     };
   };
 
-  /** Take a snapshot, record it in history, and download the file. */
+  /** Take a snapshot, record metadata in history, and download the file. */
   const handleBackup = () => {
     setIsBackingUp(true);
     try {
@@ -72,7 +71,6 @@ export default function BackupCenter() {
         size: formatBytes(usedBytes()),
         type: 'manual',
         files: Object.keys((payload as { data?: object }).data ?? {}).length,
-        payload,
       };
       setBackups([record, ...backups]);
       downloadJSON(payload, `learning-os-backup-${date}.json`);
@@ -115,12 +113,6 @@ export default function BackupCenter() {
     const file = e.target.files?.[0];
     if (file) handleImportFile(file);
     e.target.value = ''; // allow re-selecting the same file
-  };
-
-  const handleRestoreRecord = (record: BackupRecord) => {
-    const result = importAll(record.payload);
-    if (result.ok) flash('ok', `Restored backup from ${record.date}. ${result.message}`);
-    else flash('error', result.message);
   };
 
   const handleDeleteRecord = (id: string) => {
@@ -208,16 +200,6 @@ export default function BackupCenter() {
                 <p className="text-xs text-muted">Download all data as JSON</p>
               </div>
             </button>
-
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-elevated/20 text-left opacity-70">
-              <div className="w-10 h-10 rounded-lg bg-warning/15 flex items-center justify-center">
-                <FileArchive className="w-5 h-5 text-warning" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-text">Export CSV</p>
-                <p className="text-xs text-muted">Coming in a future update</p>
-              </div>
-            </div>
           </div>
 
           {feedback && (
@@ -228,8 +210,7 @@ export default function BackupCenter() {
             }`}>
               {feedback.kind === 'ok' 
                 ? <CheckCircle2 className="w-4 h-4 text-success" />
-                : <AlertCircle className="w-4 h-4 text-danger" />
-              }
+                : <AlertCircle className="w-4 h-4 text-danger" />}
               <p className={`text-sm ${feedback.kind === 'ok' ? 'text-success' : 'text-danger'}`}>
                 {feedback.text}
               </p>
@@ -247,19 +228,15 @@ export default function BackupCenter() {
             <p className="text-sm text-muted text-center py-8">No backups yet. Create one above.</p>
           ) : (
             <div className="space-y-2">
-              {backups.map((backup, i) => (
+              {backups.map((backup) => (
                 <div key={backup.id} className="flex items-center gap-3 p-3 rounded-lg bg-elevated/30 hover:bg-elevated/50 transition-colors">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    i === 0 ? 'bg-primary/15' : 'bg-elevated/50'
-                  }`}>
-                    <FileArchive className={`w-4 h-4 ${i === 0 ? 'text-primary' : 'text-muted'}`} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-primary/15">
+                    <FileArchive className="w-4 h-4 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm text-text">{backup.date}</p>
-                      {i === 0 && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">Latest</span>
-                      )}
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">Latest</span>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted">
                       <span>{backup.time}</span>
@@ -269,33 +246,23 @@ export default function BackupCenter() {
                       <span>{backup.files} items</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button type="button" 
-                      onClick={() => handleRestoreRecord(backup)}
-                      title="Restore this backup"
-                      className="p-1.5 rounded-lg hover:bg-elevated text-muted hover:text-success transition-colors"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                    </button>
-                    <button type="button" 
-                      onClick={() => downloadJSON(backup.payload, `learning-os-backup-${backup.date}.json`)}
-                      title="Download this backup"
-                      className="p-1.5 rounded-lg hover:bg-elevated text-muted hover:text-text transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                    </button>
-                    <button type="button" 
-                      onClick={() => handleDeleteRecord(backup.id)}
-                      title="Delete this backup record"
-                      className="p-1.5 rounded-lg hover:bg-danger/15 text-muted hover:text-danger transition-colors"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <button type="button" 
+                    onClick={() => handleDeleteRecord(backup.id)}
+                    title="Delete this backup record"
+                    className="p-1.5 rounded-lg hover:bg-danger/15 text-muted hover:text-danger transition-colors"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
                 </div>
               ))}
             </div>
           )}
+        </div>
+
+        <div className="mt-6 p-4 rounded-lg bg-elevated/30 border border-border/30">
+          <p className="text-xs text-muted">
+            Backup history records are stored locally with metadata only. To restore, use “Restore Backup” and select the downloaded JSON file. The full data payload lives in your downloaded file, not in this history list — this keeps local storage lean.
+          </p>
         </div>
       </div>
     </div>

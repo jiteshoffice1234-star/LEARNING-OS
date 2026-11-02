@@ -97,6 +97,7 @@ export default function Flashcards() {
     : null;
 
   const handleStartStudy = (deck: Deck) => {
+    if (deck.cards.length === 0) return; // cannot study an empty deck
     setSelectedDeck(deck);
     setStudyMode(true);
     setCurrentCardIndex(0);
@@ -188,8 +189,14 @@ export default function Flashcards() {
   };
 
   if (studyMode && liveSelectedDeck) {
-    const card = liveSelectedDeck.cards[currentCardIndex];
+    // Safety: empty deck cannot be studied.
+    if (liveSelectedDeck.cards.length === 0) {
+      setStudyMode(false);
+      setSelectedDeck(null);
+      return null;
+    }
     const progress = ((currentCardIndex + 1) / liveSelectedDeck.cards.length) * 100;
+    const card = liveSelectedDeck.cards[currentCardIndex];
 
     return (
       <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">

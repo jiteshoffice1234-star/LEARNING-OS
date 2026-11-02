@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Play, Pause, Square, RotateCcw, Clock, BookOpen, Zap } from 'lucide-react';
-import { usePersistentState, isDataWiped } from '../lib/storage';
+import { Play, Pause, Square, RotateCcw, Clock, BookOpen, Zap, Plus } from 'lucide-react';
+import { usePersistentState, isDataWiped, store } from '../lib/storage';
 import { todayISO } from '../lib/dates';
+import { readSubjects } from '../lib/study';
+import Modal from '../components/Modal';
+import { ModalActions } from '../components/Modal';
 
 interface Session {
   id: string;
@@ -11,14 +14,6 @@ interface Session {
   duration: number;
   type: 'deep' | 'revision';
 }
-
-/** Seed with the original demo history so the first run isn't empty. */
-const initialSessions: Session[] = [
-  { id: 's1', subject: 'Algorithms & Data Structures', date: '2026-10-31', duration: 120, type: 'deep' },
-  { id: 's2', subject: 'Machine Learning', date: '2026-10-31', duration: 90, type: 'deep' },
-  { id: 's3', subject: 'Operating Systems', date: '2026-10-30', duration: 60, type: 'revision' },
-  { id: 's4', subject: 'Database Systems', date: '2026-10-30', duration: 150, type: 'deep' },
-];
 
 /** Persisted timer state so a running session survives a page refresh. */
 interface TimerState {
@@ -36,7 +31,7 @@ const initialTimer: TimerState = {
   isPaused: false,
   startTime: null,
   baseElapsed: 0,
-  subject: 'Algorithms & Data Structures',
+  subject: '',
 };
 
 const emptyTimer: TimerState = {
@@ -49,10 +44,20 @@ const emptyTimer: TimerState = {
 
 export default function StudyTimer() {
   const wiped = isDataWiped();
-  const [sessions, setSessions] = usePersistentState<Session[]>('studySessions', wiped ? [] : initialSessions);
+  const [sessions, setSessions] = usePersistentState<Session[]>('studySessions', wiped ? [] : []);
   const [timer, setTimer] = usePersistentState<TimerState>('studyTimer', wiped ? emptyTimer : initialTimer);
+  const [subjects, setSubjects] = useState<string[]>([]);
   const [elapsed, setElapsed] = useState(0);
   const mountedRef = useRef(true);
+  const [showAddSubject, setShowAddSubject] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState('');
+
+  // Load subjects from storage so the selector stays in sync with Study Center.
+  useEffect(() => {
+    const subjList = store.get<string[]>('subjects', []);
+    const sessionSubjects = sessions.map(s => s.subject);
+    setSubjects([...new Set([...subjList, ...sessionSubjects])]);
+  }, []);
 
   // Recompute elapsed from the persisted timer on mount (handles refresh).
   useEffect(() => {
@@ -79,6 +84,7 @@ export default function StudyTimer() {
   }, [timer.isRunning, timer.isPaused, timer.startTime, timer.baseElapsed]);
 
   const handleStart = () => {
+    if (!timer.subject.trim()) return;
     setTimer({ ...timer, isRunning: true, isPaused: false, startTime: Date.now(), baseElapsed: 0 });
   };
 
@@ -112,6 +118,10 @@ export default function StudyTimer() {
         },
         ...sessions,
       ]);
+      // Add subject to known list if new.
+      if (!subjects.includes(timer.subject)) {
+        setSubjects([...subjects, timer.subject]);
+      }
     }
   };
 
@@ -127,6 +137,15 @@ export default function StudyTimer() {
     setElapsed(0);
   };
 
+  const handleAddSubject = () => {
+    const name = newSubjectName.trim();
+    if (!name || subjects.includes(name)) return;
+    setSubjects([...subjects, name]);
+    setTimer({ ...timer, subject: name });
+    setNewSubjectName('');
+    setShowAddSubject(false);
+  };
+
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -137,6 +156,8 @@ export default function StudyTimer() {
   const today = todayISO();
   const todaySessions = sessions.filter(s => s.date === today);
   const todayTotal = todaySessions.reduce((acc, s) => acc + s.duration, 0);
+
+  const subjectOptions = subjects.length > 0 ? subjects : ['Algorithms & Data Structures', 'Machine Learning', 'Database Systems', 'Operating Systems', 'Computer Networks', 'Python Programming'];
 
   return (
     <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
@@ -152,19 +173,26 @@ export default function StudyTimer() {
           {/* Subject Selector */}
           <div className="mb-5">
             <label className="text-[10px] text-muted uppercase tracking-wider mb-1.5 block">Current Subject</label>
-            <select 
-              value={timer.subject}
-              onChange={(e) => setTimer({ ...timer, subject: e.target.value })}
-              disabled={timer.isRunning && !timer.isPaused}
-              className="bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary transition-colors disabled:opacity-60"
-            >
-              <option>Algorithms & Data Structures</option>
-              <option>Machine Learning</option>
-              <option>Database Systems</option>
-              <option>Operating Systems</option>
-              <option>Computer Networks</option>
-              <option>Python Programming</option>
-            </select>
+            <div className="flex flex-wrap items-center gap-2">
+              <select 
+                value={timer.subject}
+                onChange={(e) => setTimer({ ...timer, subject: e.target.value })}
+                disabled={timer.isRunning && !timer.isPaused}
+                className="bg-elevated border border-border rounded-lg px-3 py-1.5 text-sm text-text focus:outline-none focus:border-primary transition-colors disabled:opacity-60 min-w-[180px]"
+              >
+                {subjectOptions.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => setShowAddSubject(true)}
+                disabled={timer.isRunning && !timer.isPaused}
+                className="px-2.5 py-1.5 rounded-lg bg-elevated text-muted hover:bg-elevated/80 disabled:opacity-60 transition-colors"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
           </div>
 
           {/* Timer Display */}
@@ -178,8 +206,8 @@ export default function StudyTimer() {
                   stroke="url(#timerGradient)" 
                   strokeWidth="4" 
                   strokeLinecap="round"
-                  strokeDasharray={`${2 * Math.PI * 90}`}
-                  strokeDashoffset={`${2 * Math.PI * 90 * (1 - (elapsed % 3600) / 3600)}`}
+                  strokeDasharray={`${2 * Math.PI * 90}`}  
+                  strokeDashoffset={`${2 * Math.PI * 90 * (1 - (elapsed % 3600) / 3600)}`}  
                   className="transition-all duration-1000"
                 />
                 <defs>
@@ -205,7 +233,8 @@ export default function StudyTimer() {
             {!timer.isRunning ? (
               <button type="button" 
                 onClick={handleStart}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/25"
+                disabled={!timer.subject.trim()}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-primary text-white font-medium text-sm hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Play className="w-4 h-4" />
                 Start Session
@@ -246,6 +275,34 @@ export default function StudyTimer() {
           </div>
         </div>
 
+        {/* Add Subject Dialog */}
+        <Modal
+          open={showAddSubject}
+          onClose={() => setShowAddSubject(false)}
+          title="New Subject"
+          description="Add a subject so it appears in the selector and Study Center."
+          footer={
+            <ModalActions
+              onCancel={() => setShowAddSubject(false)}
+              onSubmit={handleAddSubject}
+              submitLabel="Add"
+              submitDisabled={!newSubjectName.trim() || subjects.includes(newSubjectName.trim())}
+            />
+          }
+        >
+          <div>
+            <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Subject Name *</label>
+            <input
+              type="text"
+              placeholder="e.g. Algorithms & Data Structures"
+              value={newSubjectName}
+              onChange={(e) => setNewSubjectName(e.target.value)}
+              className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
+              autoFocus
+            />
+          </div>
+        </Modal>
+
         {/* Today's Stats */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="glass-card rounded-lg p-2.5 text-center">
@@ -271,9 +328,7 @@ export default function StudyTimer() {
             )}
             {sessions.slice(0, 8).map((session) => (
               <div key={session.id} className="flex items-center gap-2 p-2 rounded-md bg-elevated/30 hover:bg-elevated/50 transition-colors">
-                <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${
-                  session.type === 'deep' ? 'bg-primary/15' : 'bg-accent/15'
-                }`}>
+                <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${session.type === 'deep' ? 'bg-primary/15' : 'bg-accent/15'}`}>
                   <Clock className={`w-3 h-3 ${session.type === 'deep' ? 'text-primary' : 'text-accent'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -282,9 +337,7 @@ export default function StudyTimer() {
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-xs font-medium text-text">{Math.floor(session.duration / 60)}h{session.duration % 60}m</p>
-                  <span className={`text-[9px] px-1 py-0.5 rounded-full ${
-                    session.type === 'deep' ? 'bg-primary/15 text-primary' : 'bg-accent/15 text-accent'
-                  }`}>
+                  <span className={`text-[9px] px-1 py-0.5 rounded-full ${session.type === 'deep' ? 'bg-primary/15 text-primary' : 'bg-accent/15 text-accent'}`}>
                     {session.type}
                   </span>
                 </div>

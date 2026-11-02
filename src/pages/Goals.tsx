@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { 
   Target, Plus, TrendingUp, Calendar, CheckCircle2, 
   Clock, AlertTriangle, ChevronRight, Flame, Trash2
@@ -44,6 +45,7 @@ export default function Goals() {
   const [type, setType] = useState<Goal['type']>('learning');
   const [targetDate, setTargetDate] = useState('');
   const [milestoneInput, setMilestoneInput] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const filtered = filter === 'all' ? goals : goals.filter(g => g.type === filter);
 
@@ -79,8 +81,14 @@ export default function Goals() {
     setShowAdd(false);
   };
 
-  const handleDelete = (id: string) => {
-    setGoals(goals.filter((g) => g.id !== id));
+  const requestDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const doDelete = () => {
+    if (!confirmDeleteId) return;
+    setGoals(goals.filter((g) => g.id !== confirmDeleteId));
+    setConfirmDeleteId(null);
   };
 
   /** Toggle a milestone and recompute the goal's progress from completion. */
@@ -193,7 +201,7 @@ export default function Goals() {
                     </p>
                   </div>
                   <button
-                    onClick={() => handleDelete(goal.id)}
+                    onClick={(e) => { e.stopPropagation(); requestDelete(goal.id); }}
                     aria-label={`Delete goal: ${goal.title}`}
                     className="p-1.5 rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors"
                   >
@@ -332,6 +340,17 @@ export default function Goals() {
           <p className="text-[11px] text-muted mt-1">One milestone per line. Progress is calculated from these.</p>
         </div>
       </Modal>
+
+      {confirmDeleteId && (
+        <ConfirmDialog
+          open={true}
+          title="Delete goal?"
+          message="This will permanently remove this goal. It cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={doDelete}
+          onClose={() => setConfirmDeleteId(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { usePersistentState, isDataWiped } from '../lib/storage';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { 
   Brain, Plus, Search, Tag, Link2, BookOpen, Lightbulb, 
-  ExternalLink, Archive, Star, Filter, X
+  ExternalLink, Archive, Star, Filter, X, Trash2
 } from 'lucide-react';
 
 interface KnowledgeItem {
@@ -46,6 +47,7 @@ export default function Knowledge() {
   const [newContent, setNewContent] = useState('');
   const [newType, setNewType] = useState<KnowledgeItem['type']>('concept');
   const [newTags, setNewTags] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const allTags = [...new Set(items.flatMap(i => i.tags))];
   
@@ -61,8 +63,14 @@ export default function Knowledge() {
     setItems(items.map(i => i.id === id ? { ...i, starred: !i.starred } : i));
   };
 
-  const handleDelete = (id: string) => {
-    setItems(items.filter(i => i.id !== id));
+  const requestDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const doDelete = () => {
+    if (!confirmDeleteId) return;
+    setItems(items.filter(i => i.id !== confirmDeleteId));
+    setConfirmDeleteId(null);
   };
 
   const handleAdd = () => {
@@ -190,7 +198,7 @@ export default function Knowledge() {
                 </div>
                 <div className="flex items-center gap-1">
                   <button type="button" 
-                    onClick={() => handleDelete(item.id)}
+                    onClick={(e) => { e.stopPropagation(); requestDelete(item.id); }}
                     title="Delete"
                     className="p-1 rounded text-muted hover:text-danger transition-colors opacity-0 group-hover:opacity-100"
                   >
@@ -304,6 +312,17 @@ export default function Knowledge() {
             </div>
           </div>
         </div>
+      )}
+
+      {confirmDeleteId && (
+        <ConfirmDialog
+          open={true}
+          title="Delete knowledge item?"
+          message="This will permanently remove this knowledge item. It cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={doDelete}
+          onClose={() => setConfirmDeleteId(null)}
+        />
       )}
     </div>
   );

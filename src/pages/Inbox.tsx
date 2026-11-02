@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { store, usePersistentState, isDataWiped } from '../lib/storage';
 import Modal from '../components/Modal';
-import { notes as seedNotes } from '../data/mockData';
 import { 
   Inbox as InboxIcon, Plus, Type, Image, FileText, Link2, Mic,
   CheckCircle2, Clock, Archive, ChevronRight, Send, Tag
@@ -175,14 +174,14 @@ export default function InboxPage() {
         createdAt: today,
       });
     } else if (target === 'Note') {
-      // Seed with the Notes page demo data so it isn't wiped on a first write.
+      // Convert to a note without re-seeding demo data after a wipe.
       appendToStore<NoteItem>('notes', {
         id,
         title,
         subject: capture.tags[0] || 'General',
         date: today,
         tags: [...capture.tags],
-      }, seedNotes);
+      }, []);
     } else {
       appendToStore<GoalItem>('goals', {
         id,

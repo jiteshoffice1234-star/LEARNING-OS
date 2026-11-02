@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
 import Layout from './components/Layout';
 import CommandPalette from './components/CommandPalette';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import { initTheme } from './lib/theme';
 
@@ -97,7 +98,9 @@ export default function App() {
   return (
     <>
       <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
-        <Suspense fallback={<PageLoading />}>{renderPage()}</Suspense>
+        <ErrorBoundary resetKey={currentPage} onNavigate={setCurrentPage}>
+          <Suspense fallback={<PageLoading />}>{renderPage()}</Suspense>
+        </ErrorBoundary>
       </Layout>
       <CommandPalette 
         isOpen={commandPaletteOpen} 

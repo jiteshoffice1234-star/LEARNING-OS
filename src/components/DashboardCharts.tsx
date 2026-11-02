@@ -2,21 +2,29 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar,
 } from 'recharts';
-import { weeklyStudyData } from '../data/mockData';
+import type { StudySession } from '../lib/study';
+import { weekSeries, monthSeries, readDailyTarget } from '../lib/study';
 
 /**
  * Dashboard charts, kept in their own module so recharts (~400 kB) is loaded
- * on demand instead of being bundled into the initial page load.
+ * on demand instead of being bundled into the initial page load. All data is
+ * derived from real study sessions in persistent storage.
  */
 
 const GRID = '#2A2F3A';
 const AXIS_TICK = { fill: '#9295A3', fontSize: 11 };
 
+interface WeeklyStudyChartProps {
+  sessions: StudySession[];
+  dailyTarget: number;
+}
+
 /** Weekly study hours vs target — the large chart on the dashboard. */
-export function WeeklyStudyChart() {
+export function WeeklyStudyChart({ sessions, dailyTarget }: WeeklyStudyChartProps) {
+  const data = weekSeries(sessions, 7, dailyTarget);
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={weeklyStudyData}>
+      <AreaChart data={data}>
         <defs>
           <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor="#8170ED" stopOpacity={0.3} />
@@ -37,18 +45,16 @@ export function WeeklyStudyChart() {
   );
 }
 
-const MONTHLY_TREND = [
-  { month: 'Jul', hours: 95 },
-  { month: 'Aug', hours: 110 },
-  { month: 'Sep', hours: 88 },
-  { month: 'Oct', hours: 105 },
-];
-
 /** Small month-over-month bar chart shown under Recent Achievements. */
-export function MonthlyTrendChart() {
+interface MonthlyTrendChartProps {
+  sessions: StudySession[];
+}
+
+export function MonthlyTrendChart({ sessions }: MonthlyTrendChartProps) {
+  const data = monthSeries(sessions, 4);
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <BarChart data={MONTHLY_TREND}>
+      <BarChart data={data}>
         <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
         <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ ...AXIS_TICK, fontSize: 10 }} />
         <YAxis axisLine={false} tickLine={false} tick={{ ...AXIS_TICK, fontSize: 10 }} />

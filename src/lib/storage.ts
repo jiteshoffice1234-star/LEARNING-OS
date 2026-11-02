@@ -299,12 +299,16 @@ export function importAll(payload: unknown): ImportResult {
 
 /** Wipe the whole namespace (Danger Zone → Delete All Data).
  *
- * Preserves the onboarding flag so the user isn't forced through Welcome again,
- * and sets `dataWiped` so demo data doesn't re-seed on the next read.
+ * Everything the user created is erased, but app preferences survive:
+ * theme, notification toggle, daily target and the GitHub connection are
+ * configuration — not learning data — and wiping them would silently break
+ * uploads and styling. `dataWiped` stops the demo seed from coming back.
  */
 export function clearAll() {
   listKeys().forEach((key) => {
     if (key === 'onboardingComplete') return; // keep onboarding state
+    if (key.startsWith('settings:')) return; // keep appearance + preferences
+    if (key === 'githubConfig:v2') return; // keep cloud upload connection
     removeValue(key);
   });
   writeValue('dataWiped', true);

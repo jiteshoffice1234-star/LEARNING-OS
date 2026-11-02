@@ -18,8 +18,18 @@ function CategoryIcon({ type, className }: { type: GitHubFile['type']; className
   return <File className={className} />;
 }
 
+const TEXT_EXTS = ['txt', 'md', 'html', 'json', 'csv', 'rtf', 'log', 'xml', 'yaml', 'yml'];
+
+function extensionOf(name: string): string {
+  return (name.toLowerCase().split('.').pop() || '') as string;
+}
+
 export default function FileViewer({ file, onClose, onDelete, isOwner = true }: FileViewerProps) {
   const [deleting, setDeleting] = useState(false);
+  const [text, setText] = useState<string | null>(null);
+  const [textLoading, setTextLoading] = useState(false);
+  const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -31,12 +41,63 @@ export default function FileViewer({ file, onClose, onDelete, isOwner = true }: 
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = previousOverflow;
+      if (pdfBlobUrl) URL.revokeObjectURL(pdfBlobUrl);
     };
-  }, [onClose]);
+  }, [onClose, pdfBlobUrl]);
+
+  // Load plain-text documents inline so they're readable without leaving the app.
+  const loadText = async () => {
+    const ext = extensionOf(file.name);
+    if (!TEXT_EXTS.includes(ext)) return;
+    if (!file.download_url) return;
+    setTextLoading(true);
+    try {
+      const res = await fetch(file.download_url);
+      if (res.ok) {
+        setText(await res.text());
+      } else {
+        setText(null);
+      }
+    } catch {
+      setText(null);
+    } finally {
+      setTextLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (file.type === 'document' && TEXT_EXTS.includes(extensionOf(file.name))) {
+      loadText();
+    }
+  }, [file]);
 
   const isPdf = file.type === 'pdf';
   const isImage = file.type === 'image';
   const canOpen = Boolean(file.download_url);
+
+  // Fetch PDF as a blob and create a local object URL. Serving it from the
+  // browser itself bypasses GitHub's Content-Disposition: attachment header,
+  // so the PDF renders inline instead of triggering a download.
+  const loadPdfBlob = async () => {
+    if (!file.download_url) return;
+    setPdfLoading(true);
+    try {
+      const res = await fetch(file.download_url);
+      if (!res.ok) throw new Error('Failed to fetch PDF');
+      const blob = await res.blob();
+      setPdfBlobUrl(URL.createObjectURL(blob));
+    } catch {
+      setPdfBlobUrl(null);
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isPdf && canOpen && file.download_url && !pdfBlobUrl && !pdfLoading) {
+      loadPdfBlob();
+    }
+  }, [file, isPdf, canOpen, pdfBlobUrl, pdfLoading]);
 
   const handleDelete = async () => {
     if (!onDelete) return;
@@ -87,15 +148,27 @@ export default function FileViewer({ file, onClose, onDelete, isOwner = true }: 
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-3 sm:p-4 bg-bg min-h-[240px]">
+          {/* PDF — inline render via blob URL (no external viewer, no download prompt) */}
           {isPdf && canOpen ? (
-            <div className="space-y-2">
-              <iframe
-                src={`${file.download_url}#view=FitH`}
-                className="w-full h-[60vh] rounded-lg border border-border bg-white"
-                title={file.name}
-              />
+            <div className="flex flex-col items-center justify-center gap-2">
+              {pdfLoading ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Loader2 className="w-6 h-6 animate-spin mb-2" />
+                  <p className="text-xs text-muted">Loading PDF…</p>
+                </div>
+              ) : pdfBlobUrl ? (
+                <iframe
+                  src={pdfBlobUrl}
+                  className="w-full h-[62vh] rounded-lg border border-border bg-white"
+                  title={file.name}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <p className="text-xs text-muted">Could not load PDF preview.</p>
+                </div>
+              )}
               <p className="text-[10px] text-muted text-center">
-                If the PDF does not display, use “Open in new tab”.
+                Preview not loading? Use “Download” or “Open in new tab” below.
               </p>
             </div>
           ) : isImage && canOpen ? (
@@ -105,6 +178,15 @@ export default function FileViewer({ file, onClose, onDelete, isOwner = true }: 
                 alt={file.name}
                 className="max-w-full max-h-[65vh] rounded-lg border border-border object-contain"
               />
+            </div>
+          ) : text !== null ? (
+            <div className="text-sm text-text leading-relaxed break-words whitespace-pre-wrap font-mono text-[12px]">
+              {text}
+            </div>
+          ) : textLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Loader2 className="w-6 h-6 animate-spin mb-2" />
+              <p className="text-xs text-muted">Reading file…</p>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -117,24 +199,28 @@ export default function FileViewer({ file, onClose, onDelete, isOwner = true }: 
 
         {/* Actions */}
         <div className="flex flex-wrap items-center gap-2 p-3 sm:p-4 border-t border-border bg-surface/50">
-          <a
-            href={file.download_url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-elevated text-text text-xs font-medium hover:bg-elevated/80 transition-colors"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Download
-          </a>
-          <a
-            href={file.download_url}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-elevated text-text text-xs font-medium hover:bg-elevated/80 transition-colors"
-          >
-            <ExternalLink className="w-3.5 h-3.5" />
-            Open in new tab
-          </a>
+          {canOpen && (
+            <a
+              href={file.download_url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-elevated text-text text-xs font-medium hover:bg-elevated/80 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download
+            </a>
+          )}
+          {canOpen && (
+            <a
+              href={file.download_url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-elevated text-text text-xs font-medium hover:bg-elevated/80 transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              Open in new tab
+            </a>
+          )}
           <a
             href={file.html_url}
             target="_blank"

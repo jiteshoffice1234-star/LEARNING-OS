@@ -1,6 +1,6 @@
 import { usePersistentState } from './storage';
 
-export type Theme = 'dark' | 'light' | 'claude';
+export type Theme = 'dark' | 'light';
 
 const THEME_KEY = 'settings:theme';
 
@@ -12,7 +12,7 @@ const THEME_KEY = 'settings:theme';
 export function applyTheme(theme: Theme) {
   const root = document.documentElement;
   root.setAttribute('data-theme', theme);
-  if (theme === 'dark' || theme === 'claude') {
+  if (theme === 'dark') {
     root.classList.add('dark');
   } else {
     root.classList.remove('dark');
@@ -27,7 +27,6 @@ export function getStoredTheme(): Theme {
     if (!raw) return 'dark';
     const parsed = JSON.parse(raw);
     if (parsed === 'light') return 'light';
-    if (parsed === 'claude') return 'claude';
     return 'dark';
   } catch {
     return 'dark';

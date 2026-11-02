@@ -357,7 +357,7 @@ export default function Qualifications() {
 
               {selectedQual.status === 'pursuing' && (
                 <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
-                  <p className="text-xs text-primary">Currently pursuing • Next exam scheduled</p>
+                  <p className="text-xs text-primary">Currently pursuing — in progress</p>
                 </div>
               )}
             </div>

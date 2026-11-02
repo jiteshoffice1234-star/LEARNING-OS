@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import { 
-  Settings as SettingsIcon, Moon, Sun, Bell, Clock, Database, 
+import {
+  Settings as SettingsIcon, Moon, Sun, Bell, Clock, Database,
   Shield, Download, Upload, HardDrive, Trash2, ChevronRight,
-  ToggleLeft, ToggleRight, Cloud, CloudOff, CheckCircle2, ExternalLink,
-  Sparkles, Github,
+  ToggleLeft, ToggleRight, CheckCircle2, Github, CloudOff, Target,
 } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { usePersistentState, exportAll, clearAll, usedBytes, formatBytes } from '../lib/storage';
 import { getGitHubConfig, saveGitHubConfig, isGitHubConfigured, testGitHubConnection } from '../lib/githubFiles';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function SettingsPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const [theme, setTheme] = useTheme();
   const [notifications, setNotifications] = usePersistentState('settings:notifications', true);
-  const [autoBackup, setAutoBackup] = usePersistentState('settings:autoBackup', true);
+  const [dailyTarget, setDailyTarget] = usePersistentState('settings:dailyTarget', 4);
   const [confirmClear, setConfirmClear] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -26,6 +26,11 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
   const [ghStatus, setGhStatus] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [ghTesting, setGhTesting] = useState(false);
   const ghConfigured = isGitHubConfigured();
+
+  const flash = (text: string) => {
+    setStatus(text);
+    window.setTimeout(() => setStatus(null), 4000);
+  };
 
   const handleSaveGitHub = async () => {
     if (!ghToken.trim() || !ghOwner.trim() || !ghRepo.trim()) {
@@ -67,21 +72,13 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
 
   const handleBackup = () => {
     downloadJSON(exportAll(), `learning-os-backup-${new Date().toISOString().split('T')[0]}.json`);
-    setStatus('Backup downloaded.');
-    window.setTimeout(() => setStatus(null), 3000);
+    flash('Backup downloaded.');
   };
 
   const handleClearAll = () => {
-    if (!confirmClear) {
-      setConfirmClear(true);
-      setStatus('Click "Delete All Data" again to confirm.');
-      window.setTimeout(() => setConfirmClear(false), 5000);
-      return;
-    }
     clearAll();
     setConfirmClear(false);
-    setStatus('All data deleted. The app will reload with demo data.');
-    window.setTimeout(() => window.location.reload(), 1200);
+    flash('All learning data deleted. Your settings and GitHub connection were kept.');
   };
 
   return (
@@ -99,54 +96,34 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
             <Sun className="w-4 h-4 text-primary" />
             Appearance
           </h2>
-          <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow
-              icon={theme === 'dark' ? Moon : Sun}
-              label="Dark Mode"
-              description={theme === 'dark' ? 'Dark theme is active' : 'Switch to dark theme'}
-              value={theme === 'dark' ? 'Active' : 'Inactive'}
-            />
-            <SettingRow
-              icon={theme === 'light' ? Sun : Moon}
-              label="Light Mode"
-              description={theme === 'light' ? 'Light theme is active' : 'Switch to light theme'}
-              value={theme === 'light' ? 'Active' : 'Inactive'}
-            />
-            <SettingRow
-              icon={theme === 'claude' ? Sparkles : Sparkles}
-              label="Claude Mode"
-              description="Deep slate with amber accent — inspired by Claude"
-              value={theme === 'claude' ? 'Active' : 'Inactive'}
-            />
-            <div className="flex gap-1 p-4 bg-elevated/30">
-              {(['dark', 'light', 'claude'] as const).map((t) => (
+          <div className="glass-card rounded-xl p-4">
+            <div className="grid grid-cols-2 gap-3">
+              {(['dark', 'light'] as const).map((t) => (
                 <button
                   key={t}
+                  type="button"
                   onClick={() => setTheme(t)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${
                     theme === t
-                      ? t === 'claude'
-                        ? 'bg-amber-500 text-white'
-                        : t === 'dark'
-                        ? 'bg-primary text-white'
-                        : 'bg-surface text-text'
-                      : 'bg-elevated/50 text-muted hover:bg-elevated/80'
-                  }`} 
-                >{t === 'dark' ? 'Dark' : t === 'light' ? 'Light' : 'Claude'}</button>
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border bg-elevated/40 hover:bg-elevated/70'
+                  }`}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                    theme === t ? 'bg-primary/20 text-primary' : 'bg-elevated text-muted'
+                  }`}>
+                    {t === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text">{t === 'dark' ? 'Dark' : 'Light'}</p>
+                    <p className="text-[10px] text-muted">
+                      {t === 'dark' ? 'Default low-light theme' : 'Bright theme for daytime'}
+                    </p>
+                  </div>
+                  {theme === t && <CheckCircle2 className="w-4 h-4 text-primary ml-auto flex-shrink-0" />}
+                </button>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* Regional */}
-        <section className="mb-8">
-          <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Clock className="w-4 h-4 text-primary" />
-            Regional
-          </h2>
-          <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow icon={Clock} label="Week Start" description="First day of the week" value="Monday" />
-            <SettingRow icon={Clock} label="Date Format" description="How dates are displayed" value="DD/MM/YYYY" />
           </div>
         </section>
 
@@ -157,22 +134,50 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
             Notifications
           </h2>
           <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow icon={Bell} label="Push Notifications" description="Receive reminders and alerts" toggle={notifications} onToggle={() => setNotifications(!notifications)} />
-            <SettingRow icon={Clock} label="Study Reminders" description="Daily study time reminders" value="9:00 AM" />
-            <SettingRow icon={Bell} label="Revision Alerts" description="Alert before revision due dates" value="1 day before" />
+            <SettingRow
+              icon={Bell}
+              label="Reminders & Alerts"
+              description="Show overdue revisions and due tasks in the top bar"
+              toggle={notifications}
+              onToggle={() => setNotifications(!notifications)}
+            />
           </div>
         </section>
 
         {/* Study Preferences */}
         <section className="mb-8">
           <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
-            <SettingsIcon className="w-4 h-4 text-primary" />
+            <Target className="w-4 h-4 text-primary" />
             Study Preferences
           </h2>
-          <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow icon={Clock} label="Daily Study Target" description="Your daily study hour goal" value="4 hours" />
-            <SettingRow icon={Clock} label="Focus Session Duration" description="Default timer duration" value="50 minutes" />
-            <SettingRow icon={Clock} label="Break Duration" description="Time between focus sessions" value="10 minutes" />
+          <div className="glass-card rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
+                <Clock className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-text">Daily Study Target</p>
+                <p className="text-xs text-muted">Used for your daily progress ring</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0.5}
+                  max={16}
+                  step={0.5}
+                  value={dailyTarget}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    if (Number.isFinite(next)) {
+                      setDailyTarget(Math.min(16, Math.max(0.5, next)));
+                    }
+                  }}
+                  aria-label="Daily study target in hours"
+                  className="w-20 bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text text-center focus:outline-none focus:border-primary"
+                />
+                <span className="text-xs text-muted">hours</span>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -189,7 +194,7 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
               {ghConfigured ? <CheckCircle2 className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
               {ghConfigured
                 ? 'Connected to GitHub — uploads are stored in your GitHub repo.'
-                : 'Not connected. Uploads stay in this browser only (max 1.5 MB). Connect GitHub to store files in your repo.'}
+                : 'Not connected. Connect GitHub to store uploaded files in your repo.'}
             </div>
 
             <div className="space-y-3">
@@ -305,11 +310,11 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
             </button>
-            <button onClick={handleClearAll} className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left">
+            <button onClick={() => setConfirmClear(true)} className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left">
               <div className="w-8 h-8 rounded-lg bg-danger/15 flex items-center justify-center"><Trash2 className="w-4 h-4 text-danger" /></div>
               <div className="flex-1">
-                <p className="text-sm text-text">{confirmClear ? 'Confirm: Delete Everything' : 'Delete All Data'}</p>
-                <p className="text-xs text-muted">{confirmClear ? 'Click again to permanently erase' : 'Erase all data stored in this browser'}</p>
+                <p className="text-sm text-text">Delete All Data</p>
+                <p className="text-xs text-muted">Erase all learning data stored in this browser</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
             </button>
@@ -325,18 +330,6 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
           <div className="glass-card rounded-xl divide-y divide-border/50">
             <SettingRow icon={Shield} label="Offline Storage" description="All data stays on this device — no cloud sync" value="Always on" />
             <SettingRow icon={Shield} label="No Tracking" description="The app collects no analytics or personal data" value="Always on" />
-            <SettingRow icon={Shield} label="Biometric Lock" description="Use fingerprint or face ID" value="Not available" />
-          </div>
-        </section>
-
-        {/* Auto Backup */}
-        <section className="mb-8">
-          <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Database className="w-4 h-4 text-primary" /> Backup
-          </h2>
-          <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow icon={Database} label="Auto Backup" description="Remind me to back up regularly" toggle={autoBackup} onToggle={() => setAutoBackup(!autoBackup)} />
-            <SettingRow icon={HardDrive} label="Backup Location" description="Where backups are saved" value="Your device (download)" />
           </div>
         </section>
 
@@ -351,6 +344,15 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
           </div>
         </section>
       </div>
+
+      <ConfirmDialog
+        open={confirmClear}
+        title="Delete all learning data?"
+        message="This permanently erases your courses, sessions, tests, notes, goals and files from this browser. Your theme, daily target and GitHub connection are kept. This cannot be undone."
+        confirmLabel="Delete Everything"
+        onConfirm={handleClearAll}
+        onClose={() => setConfirmClear(false)}
+      />
     </div>
   );
 }
@@ -366,9 +368,17 @@ function SettingRow({ icon: Icon, label, description, toggle, onToggle, value }:
         <p className="text-xs text-muted">{description}</p>
       </div>
       {toggle !== undefined ? (
-        <button type="button" onClick={onToggle} className="flex-shrink-0">{toggle ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted" />}</button>
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={`${toggle ? 'Disable' : 'Enable'} ${label}`}
+          aria-pressed={toggle}
+          className="flex-shrink-0"
+        >
+          {toggle ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted" />}
+        </button>
       ) : (
-        <div className="flex items-center gap-1 flex-shrink-0"><span className="text-sm text-muted">{value}</span><ChevronRight className="w-4 h-4 text-muted" /></div>
+        <span className="flex-shrink-0 text-sm text-muted">{value}</span>
       )}
     </div>
   );

@@ -144,7 +144,9 @@ export default function Layout({ children, currentPage, onNavigate }: LayoutProp
   const currentSection = navSections.find(s => s.items.some(i => i.id === currentPage))?.id || 'home';
 
   // Real notifications derived from the user's stored data (no fake badge).
-  const notifications = buildNotifications();
+  // The Settings toggle suppresses the badge without touching the data.
+  const [notificationsEnabled] = usePersistentState('settings:notifications', true);
+  const notifications = notificationsEnabled ? buildNotifications() : [];
 
   // Profile data for sidebar display — reactive so sidebar updates when you
   // edit your name on the Profile page.

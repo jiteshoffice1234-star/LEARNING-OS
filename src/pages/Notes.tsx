@@ -7,6 +7,7 @@ import Modal, { ModalActions } from '../components/Modal';
 interface Note {
   id: string;
   title: string;
+  content: string;
   subject: string;
   date: string;
   tags: string[];
@@ -14,17 +15,19 @@ interface Note {
 
 export default function Notes() {
   const wiped = isDataWiped();
-  const [notes, setNotes] = usePersistentState<Note[]>('notes', wiped ? [] : seedNotes);
+  const [notes, setNotes] = usePersistentState<Note[]>('notes', wiped ? [] : seedNotes.map((n) => ({ ...n, content: '' })));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
   const [newSubject, setNewSubject] = useState('');
   const [newTags, setNewTags] = useState('');
 
   // Edit note state
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
   const [editSubject, setEditSubject] = useState('');
   const [editTags, setEditTags] = useState('');
 
@@ -42,12 +45,14 @@ export default function Notes() {
     const note: Note = {
       id: Date.now().toString(),
       title: newTitle.trim(),
+      content: newContent.trim(),
       subject: newSubject.trim() || 'General',
       date: new Date().toISOString().split('T')[0],
       tags: newTags.split(',').map(t => t.trim()).filter(Boolean),
     };
     setNotes([note, ...notes]);
     setNewTitle('');
+    setNewContent('');
     setNewSubject('');
     setNewTags('');
     setShowAdd(false);
@@ -60,13 +65,14 @@ export default function Notes() {
   const openEdit = (note: Note) => {
     setEditingNote(note);
     setEditTitle(note.title);
+    setEditContent(note.content);
     setEditSubject(note.subject);
     setEditTags(note.tags.join(', '));
   };
 
   const handleSaveEdit = () => {
     if (!editingNote || !editTitle.trim()) return;
-    setNotes(notes.map(n => n.id === editingNote.id ? { ...n, title: editTitle.trim(), subject: editSubject.trim() || 'General', tags: editTags.split(',').map(t => t.trim()).filter(Boolean) } : n));
+    setNotes(notes.map(n => n.id === editingNote.id ? { ...n, title: editTitle.trim(), content: editContent.trim(), subject: editSubject.trim() || 'General', tags: editTags.split(',').map(t => t.trim()).filter(Boolean) } : n));
     setEditingNote(null);
   };
 
@@ -214,6 +220,16 @@ export default function Notes() {
                 />
               </div>
               <div>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Content</label>
+                <textarea
+                  placeholder="Write your notes here…"
+                  value={newContent}
+                  onChange={(e) => setNewContent(e.target.value)}
+                  rows={4}
+                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary resize-none"
+                />
+              </div>
+              <div>
                 <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Tags (comma separated)</label>
                 <input
                   type="text"
@@ -270,6 +286,15 @@ export default function Notes() {
             value={editSubject}
             onChange={(e) => setEditSubject(e.target.value)}
             className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Content</label>
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            rows={4}
+            className="w-full bg-elevated border border-border rounded-lg px-3 py-2 text-sm text-text focus:outline-none focus:border-primary resize-none"
           />
         </div>
         <div>

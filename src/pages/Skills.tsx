@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { usePersistentState, isDataWiped } from '../lib/storage';
+import { usePersistentState, isDataWiped, store } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { Brain, Plus, TrendingUp, Clock, Target, Award, Trash2 } from 'lucide-react';
 import { skills, skillCategories, roadmapItems } from '../data/mockData';
 
@@ -35,6 +36,7 @@ export default function Skills() {
   const [hours, setHours] = useState('');
   const [startDate, setStartDate] = useState('');
   const [status, setStatus] = useState<string>('learning');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const filteredSkills = selectedCategory === 'All' 
     ? skillList 
@@ -72,6 +74,17 @@ export default function Skills() {
     if (selectedSkill === id) setSelectedSkill(null);
   };
 
+  const requestDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const doDelete = () => {
+    if (!confirmDeleteId) return;
+    setSkillList(skillList.filter((s) => s.id !== confirmDeleteId));
+    setSelectedSkill(null);
+    setConfirmDeleteId(null);
+  };
+
   /** Nudge a skill's proficiency up or down, clamped to the 0–5 scale. */
   const adjustLevel = (id: string, delta: number) => {
     setSkillList(
@@ -106,7 +119,7 @@ export default function Skills() {
               </span>
               <button
                 type="button"
-                onClick={() => skill && handleDelete(skill.id)}
+                onClick={() => skill && requestDelete(skill.id)}
                 aria-label={`Delete skill: ${skill?.name ?? ''}`}
                 className="p-2 rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors"
               >
@@ -185,7 +198,7 @@ export default function Skills() {
             </div>
             <div className="text-center p-3 rounded-lg bg-elevated/30">
               <Award className="w-4 h-4 text-accent mx-auto mb-1" />
-              <p className="text-lg font-bold text-text">2</p>
+              <p className="text-lg font-bold text-text">{store.get<{ id: string }[]>('qualifications', []).length}</p>
               <p className="text-[10px] text-muted">Certificates</p>
             </div>
           </div>
@@ -296,7 +309,7 @@ export default function Skills() {
               </div>
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); handleDelete(skill.id); }}
+                onClick={(e) => { e.stopPropagation(); requestDelete(skill.id); }}
                 aria-label={`Delete skill: ${skill.name}`}
                 className="p-1 rounded text-muted hover:text-danger hover:bg-danger/10 transition-colors flex-shrink-0"
               >
@@ -433,6 +446,17 @@ export default function Skills() {
           </select>
         </div>
       </Modal>
+
+      {confirmDeleteId && (
+        <ConfirmDialog
+          open={true}
+          title="Delete skill?"
+          message="This will permanently remove this skill. It cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={doDelete}
+          onClose={() => setConfirmDeleteId(null)}
+        />
+      )}
     </div>
   );
 }

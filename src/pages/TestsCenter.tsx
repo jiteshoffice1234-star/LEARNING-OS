@@ -314,21 +314,22 @@ export default function TestsCenter() {
               )}
             </div>
 
-            {/* Mistake Categories */}
+            {/* Mistake Categories — derived from this test's real numbers */}
             <div className="mb-6">
               <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Mistake Categories</h3>
               <div className="space-y-2">
-                {[
-                  { category: 'Conceptual Error', count: 2, color: 'text-danger' },
-                  { category: 'Calculation Mistake', count: 1, color: 'text-warning' },
-                  { category: 'Misread Question', count: 1, color: 'text-accent' },
-                  { category: 'Time Pressure', count: 1, color: 'text-muted' },
-                ].map((mistake) => (
-                  <div key={mistake.category} className="flex items-center gap-3 p-2 rounded-lg bg-elevated/30">
-                    <span className={`text-sm ${mistake.color}`}>{mistake.count}</span>
-                    <span className="text-sm text-text flex-1">{mistake.category}</span>
-                  </div>
-                ))}
+                <div className="flex items-center gap-3 p-2 rounded-lg bg-elevated/30">
+                  <span className="text-sm text-danger">{selectedTest.incorrect}</span>
+                  <span className="text-sm text-text flex-1">Incorrect answers</span>
+                </div>
+                <div className="flex items-center gap-3 p-2 rounded-lg bg-elevated/30">
+                  <span className="text-sm text-warning">{selectedTest.unanswered}</span>
+                  <span className="text-sm text-text flex-1">Unanswered</span>
+                </div>
+                <div className="flex items-center gap-3 p-2 rounded-lg bg-elevated/30">
+                  <span className="text-sm text-success">{selectedTest.correct}</span>
+                  <span className="text-sm text-text flex-1">Correct answers</span>
+                </div>
               </div>
             </div>
 

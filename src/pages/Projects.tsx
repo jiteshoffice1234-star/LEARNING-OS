@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { usePersistentState, isDataWiped } from '../lib/storage';
 import Modal, { ModalActions } from '../components/Modal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { 
   Zap, Plus, Clock, CheckCircle2, Calendar, Users, 
   ChevronRight, Target, Code, Trash2
@@ -49,6 +50,7 @@ export default function Projects() {
 
   // --- Detail view state ---
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const filtered = filter === 'all' ? projects : projects.filter(p => p.status === filter);
 
@@ -79,9 +81,15 @@ export default function Projects() {
     setShowAdd(false);
   };
 
-  const handleDelete = (id: string) => {
-    setProjects(projects.filter((p) => p.id !== id));
-    setSelectedProject((prev) => (prev?.id === id ? null : prev));
+  const requestDelete = (id: string) => {
+    setConfirmDeleteId(id);
+  };
+
+  const doDelete = () => {
+    if (!confirmDeleteId) return;
+    setProjects(projects.filter((p) => p.id !== confirmDeleteId));
+    setSelectedProject((prev) => (prev?.id === confirmDeleteId ? null : prev));
+    setConfirmDeleteId(null);
   };
 
   return (
@@ -164,7 +172,7 @@ export default function Projects() {
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }}
+                    onClick={(e) => { e.stopPropagation(); requestDelete(project.id); }}
                     aria-label={`Delete project: ${project.name}`}
                     className="p-1.5 rounded-lg text-muted hover:text-danger hover:bg-danger/10 transition-colors"
                   >
@@ -384,9 +392,26 @@ export default function Projects() {
                 <p className="text-[11px] text-muted italic">No skills tagged yet.</p>
               )}
             </div>
+            <button type="button" 
+              onClick={() => requestDelete(selectedProject.id)}
+              className="mt-4 w-full flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-danger/15 text-danger text-sm font-medium hover:bg-danger/25 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" /> Delete Project
+            </button>
           </>
         )}
       </Modal>
+
+      {confirmDeleteId && (
+        <ConfirmDialog
+          open={true}
+          title="Delete project?"
+          message="This will permanently remove this project. It cannot be undone."
+          confirmLabel="Delete"
+          onConfirm={doDelete}
+          onClose={() => setConfirmDeleteId(null)}
+        />
+      )}
     </div>
   );
 }
