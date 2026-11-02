@@ -132,7 +132,7 @@ export default function Roadmap() {
   }
 
   // Guard: no roadmap selected (empty state after wipe or before creating one)
-  if (!selectedRoadmap || roadmaps.length === 0) {
+  if (roadmaps.length === 0) {
     return (
       <div className="p-4 md:p-6 lg:p-8 pb-24 md:pb-8">
         <div className="flex items-center justify-between mb-6">
