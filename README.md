@@ -1,10 +1,12 @@
 # LEARNING OS
 
-### LEARN WITH INTENTION. TRACK WITH PRECISION.
+### LEARNING OS - Personal Learning Management System
 
-A premium, offline-first personal learning and development management system.
+**Premium, offline-first personal learning and development management system.**
 
-![LEARNING OS](docs/assets/brand-hero.png)
+Your device is the home of your learning data. No cloud required, no accounts needed.
+
+![LEARNING OS - App Icon](public/icon.svg)
 
 ---
 
