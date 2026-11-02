@@ -1,102 +1,131 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import {
-  Award, FileText, Image, Search, Upload, Shield, Trash2, ExternalLink,
-  CheckCircle2, AlertCircle, Cloud, CloudOff,
+  FileText, Image, Search, Upload, Shield, Trash2, ExternalLink,
+  CheckCircle2, AlertCircle, Cloud, CloudOff, Github, Folder, File,
 } from 'lucide-react';
-import { isDataWiped } from '../lib/storage';
-import {
-  listFiles, uploadFile, removeFile, isSupabaseConfigured,
-  type StoredFile,
-} from '../lib/files';
 import { formatBytes } from '../lib/storage';
+import {
+  listGitHubFiles, uploadGitHubFile, deleteGitHubFile,
+  getGitHubConfig, saveGitHubConfig, clearGitHubConfig,
+  isGitHubConfigured, type GitHubFile,
+  getFileIcon, getFileCategory, formatFileSize, canPreview,
+} from '../lib/githubFiles';
+import FileViewer from '../components/FileViewer';
 
-const ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx';
+const ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.md,.html';
 
 export default function Vault() {
-  const wiped = isDataWiped();
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [files, setFiles] = useState<StoredFile[]>(() => listFiles());
+  const [ghFiles, setGhFiles] = useState<GitHubFile[]>([]);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
-  const [dragging, setDragging] = useState(false);
+  const [showViewer, setShowViewer] = useState<GitHubFile | null>(null);
+  const [ghConfigured, setGhConfigured] = useState<boolean | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const ghInputRef = useRef<HTMLInputElement>(null);
 
-  const categories = ['All', 'Certification', 'Achievement', 'Education', 'Project'];
+  const categories = ['All', 'PDF', 'Image', 'Document', 'Other'];
 
-  const achievements = wiped ? [] : [
-    { id: '1', title: 'AWS Solutions Architect', issuer: 'Amazon Web Services', date: '2025-03', category: 'Certification', verified: true },
-    { id: '2', title: 'TensorFlow Developer Certificate', issuer: 'Google', date: '2025-06', category: 'Certification', verified: true },
-    { id: '3', title: 'Kubernetes Application Developer', issuer: 'CNCF', date: '2025-09', category: 'Certification', verified: true },
-    { id: '4', title: 'First Place - University Hackathon', issuer: 'University Tech Club', date: '2024-11', category: 'Achievement', verified: false },
-    { id: '5', title: 'Open Source Contributor Badge', issuer: 'GitHub', date: '2025-01', category: 'Achievement', verified: true },
-  ];
+  // Load GitHub files on mount
+  const ghConfiguredValue = isGitHubConfigured();
 
-  const filteredAchievements = achievements.filter((a) => {
-    const matchesCategory = selectedCategory === 'All' || a.category === selectedCategory;
-    const matchesSearch =
-      a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.issuer.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  useEffect(() => {
+    setGhConfigured(ghConfiguredValue);
+    if (ghConfiguredValue) {
+      loadGitHubFiles();
+    }
+  }, [ghConfiguredValue]);
 
-  const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+  async function loadGitHubFiles() {
+    try {
+      const files = await listGitHubFiles();
+      setGhFiles(files);
+    } catch (e) {
+      console.error('Failed to load GitHub files', e);
+      setNotice({ kind: 'error', text: 'Failed to load files from GitHub.' });
+    }
+  }
 
-  const handleFiles = async (fileList: FileList | null) => {
+  const handleGitHubFiles = async (fileList: FileList | null) => {
     if (!fileList || fileList.length === 0) return;
-    setBusy(true);
+    setUploading(true);
     setNotice(null);
 
-    const uploaded: StoredFile[] = [];
+    const config = getGitHubConfig();
+    if (!config) {
+      setNotice({ kind: 'error', text: 'GitHub not configured. Please add your GitHub token in Settings.' });
+      setUploading(false);
+      return;
+    }
+
+    const uploaded: GitHubFile[] = [];
     const errors: string[] = [];
 
     for (const file of Array.from(fileList)) {
-      const result = await uploadFile(file);
+      const result = await uploadGitHubFile(file);
       if (result.ok) uploaded.push(result.file);
       else errors.push(result.error);
     }
 
-    if (uploaded.length) setFiles((prev) => [...uploaded, ...prev]);
+    if (uploaded.length) {
+      setGhFiles((prev) => [...uploaded, ...prev]);
+    }
 
     if (errors.length) {
-      setNotice({ kind: 'error', text: errors[0] });
+      setNotice({ kind: 'error', text: errors[0] ?? 'Upload failed.' });
     } else if (uploaded.length) {
       setNotice({
         kind: 'ok',
-        text: `Uploaded ${uploaded.length} file${uploaded.length === 1 ? '' : 's'}${
-          isSupabaseConfigured() ? ' to Supabase Storage' : ' (saved locally — connect Supabase for cloud storage)'
-        }.`,
+        text: `Uploaded ${uploaded.length} file${uploaded.length === 1 ? '' : 's'} to GitHub.`,
       });
     }
-    setBusy(false);
+    setUploading(false);
   };
 
-  const handleDelete = async (id: string) => {
-    await removeFile(id);
-    setFiles((prev) => prev.filter((f) => f.id !== id));
+  const handleDeleteGH = async (file: GitHubFile) => {
+    const result = await deleteGitHubFile(file.id, file.path);
+    if (result.ok) {
+      setGhFiles((prev) => prev.filter((f) => f.id !== file.id));
+      setNotice({ kind: 'ok', text: 'Deleted from GitHub.' });
+    } else {
+      setNotice({ kind: 'error', text: result.error });
+    }
   };
 
-  const openPicker = () => inputRef.current?.click();
+  const openGhPicker = () => ghInputRef.current?.click();
 
-  // Live counts derived from real uploads + demo achievements.
-  const counts = {
-    pdf: files.filter((f) => f.type === 'application/pdf').length,
-    images: files.filter((f) => f.type.startsWith('image/')).length,
-    docs: files.filter((f) => /word|text|sheet|excel|presentation/.test(f.type)).length,
-    certs: achievements.filter((a) => a.verified).length + files.filter((f) => /certificate/i.test(f.name)).length,
+  const filterByCategory = (files: GitHubFile[], category: string) => {
+    if (category === 'All') return files;
+    return files.filter((f) => {
+      const ext = f.name.toLowerCase().split('.').pop() || '';
+      if (category === 'PDF') return ext === 'pdf';
+      if (category === 'Image') return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+      if (category === 'Document') return ['doc', 'docx', 'txt', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'md', 'html'].includes(ext);
+      return true;
+    });
   };
+
+  const filteredGhFiles = ghFiles.filter((f) => {
+    const matchesSearch = f.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  const ghPdfCount = ghFiles.filter((f) => f.name.toLowerCase().endsWith('.pdf')).length;
+  const ghImgCount = ghFiles.filter((f) => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes((f.name.toLowerCase().split('.').pop() || '') as string)).length;
 
   return (
     <div className="p-3 md:p-4 lg:p-5 pb-20 md:pb-5">
-      {/* Hidden picker */}
+      {/* Hidden file picker */}
       <input
-        ref={inputRef}
+        ref={ghInputRef}
         type="file"
         multiple
         accept={ACCEPT}
         className="hidden"
         onChange={(e) => {
-          handleFiles(e.target.files);
+          handleGitHubFiles(e.target.files);
           e.target.value = '';
         }}
       />
@@ -106,42 +135,46 @@ export default function Vault() {
         <div>
           <h1 className="text-xl font-bold text-text">Achievement Vault</h1>
           <p className="text-xs text-muted">
-            {achievements.length + files.length} items · {formatBytes(totalBytes)} uploaded
+            {ghFiles.length} files · GitHub Storage
           </p>
         </div>
         <button
-          onClick={openPicker}
-          disabled={busy}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary/90 disabled:opacity-50 transition-colors"
+          onClick={openGhPicker}
+          disabled={uploading || !ghConfigured}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            ghConfigured ? 'bg-primary text-white hover:bg-primary/90' : 'bg-elevated text-muted hover:bg-elevated/80'
+          } ${!ghConfigured ? 'cursor-not-allowed opacity-50' : ''}`}
         >
           <Upload className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">{busy ? 'Uploading…' : 'Upload'}</span>
+          <span className="hidden sm:inline">{uploading ? 'Uploading…' : 'Upload to GitHub'}</span>
         </button>
       </div>
 
-      {/* Storage backend banner */}
-      <div
-        className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg text-xs ${
-          isSupabaseConfigured()
-            ? 'bg-success/10 text-success border border-success/20'
-            : 'bg-warning/10 text-warning border border-warning/20'
-        }`}
-      >
-        {isSupabaseConfigured() ? <Cloud className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
-        {isSupabaseConfigured()
-          ? 'Connected to Supabase — uploads are stored in the cloud and sync across devices.'
-          : 'Not connected to Supabase yet — uploads save to this browser only (max 1.5 MB each). Add your Project URL and anon key in Settings → Supabase to enable cloud storage.'}
+      {/* GitHub Connection Status */}
+      <div className="glass-card rounded-xl p-4 mb-3">
+        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs ${
+          ghConfigured ? 'bg-success/10 text-success border border-success/20' : 'bg-warning/10 text-warning border border-warning/20'
+        }`}>
+          {ghConfigured ? <Github className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
+          <span className="text-xs font-medium">{ghConfigured ? 'GitHub Connected' : 'Not Connected to GitHub'}</span>
+          {ghConfigured && (
+            <span className="ml-2 text-[10px] text-muted">Files sync to your GitHub repo</span>
+          )}
+        </div>
+        <p className="text-[10px] text-muted mt-1">
+          {ghConfigured
+            ? 'Upload PDFs, images, and documents to your GitHub repo. Files are stored publicly in your repository.'
+            : 'Connect your GitHub account in Settings to store files in the cloud. Files persist across devices and are accessible from anywhere.'}
+        </p>
       </div>
 
       {/* Notice */}
       {notice && (
-        <div
-          className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg text-xs border ${
-            notice.kind === 'ok'
-              ? 'bg-success/10 text-success border-success/20'
-              : 'bg-danger/10 text-danger border-danger/20'
-          }`}
-        >
+        <div className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-lg text-xs border ${
+          notice.kind === 'ok'
+            ? 'bg-success/10 text-success border-success/20'
+            : 'bg-danger/10 text-danger border-danger/20'
+        }`}>
           {notice.kind === 'ok' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
           <span>{notice.text}</span>
         </div>
@@ -150,16 +183,20 @@ export default function Vault() {
       {/* Stats */}
       <div className="flex items-center gap-2 mb-3 overflow-x-auto pb-1">
         <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[11px] text-text font-medium">{achievements.length + files.length}</span>
-          <span className="text-[10px] text-muted">Total</span>
+          <span className="text-[11px] text-text font-medium">{ghFiles.length}</span>
+          <span className="text-[10px] text-muted">Files</span>
         </div>
         <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[11px] text-success font-medium">{achievements.filter((a) => a.verified).length}</span>
-          <span className="text-[10px] text-muted">Verified</span>
+          <span className="text-[11px] text-success font-medium">{ghPdfCount}</span>
+          <span className="text-[10px] text-muted">PDFs</span>
         </div>
         <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
-          <span className="text-[11px] text-primary font-medium">{files.length}</span>
-          <span className="text-[10px] text-muted">Uploads</span>
+          <span className="text-[11px] text-primary font-medium">{ghImgCount}</span>
+          <span className="text-[10px] text-muted">Images</span>
+        </div>
+        <div className="glass-card rounded-lg px-3 py-1.5 flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[11px] text-accent font-medium">{ghFiles.length - ghPdfCount - ghImgCount}</span>
+          <span className="text-[10px] text-muted">Docs</span>
         </div>
       </div>
 
@@ -169,7 +206,7 @@ export default function Vault() {
           <Search className="w-3.5 h-3.5 text-muted" />
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search files..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="bg-transparent text-xs text-text placeholder:text-muted outline-none w-full"
@@ -190,40 +227,39 @@ export default function Vault() {
         </div>
       </div>
 
-      {/* Your Uploads */}
-      {files.length > 0 && (
+      {/* Your Files */}
+      {ghFiles.length > 0 && (
         <div className="mb-4">
-          <h3 className="text-xs font-semibold text-text mb-2">Your Uploads ({files.length})</h3>
+          <h3 className="text-xs font-semibold text-text mb-2">Your Files ({ghFiles.length})</h3>
           <div className="space-y-1.5">
-            {files.map((f) => (
+            {filterByCategory(filteredGhFiles, selectedCategory).map((f) => (
               <div
                 key={f.id}
                 className="flex items-center gap-3 p-2 rounded-lg bg-elevated/30 hover:bg-elevated/50 transition-colors group"
               >
-                {f.type.startsWith('image/') ? (
-                  <img src={f.url} alt={f.name} className="w-9 h-9 rounded object-cover flex-shrink-0" />
-                ) : (
-                  <div className="w-9 h-9 rounded bg-elevated flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-4 h-4 text-primary" />
-                  </div>
-                )}
+                <div className={`w-9 h-9 rounded flex items-center justify-center flex-shrink-0 ${
+                  f.type === 'pdf' ? 'bg-primary/15' :
+                  f.type === 'image' ? 'bg-success/15' :
+                  f.type === 'document' ? 'bg-accent/15' :
+                  'bg-muted/15'
+                }`}>
+                  <File className="w-4 h-4 text-muted" />
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-text truncate">{f.name}</p>
                   <p className="text-[10px] text-muted">
-                    {formatBytes(f.size)} · {f.origin === 'supabase' ? 'Cloud' : 'This device'}
+                    {formatFileSize(f.size)} · GitHub
                   </p>
                 </div>
-                <a
-                  href={f.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Open ${f.name}`}
+                <button
+                  type="button"
+                  onClick={() => setShowViewer(f)}
                   className="p-1.5 rounded text-muted hover:text-primary transition-colors"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
-                </a>
+                </button>
                 <button
-                  onClick={() => handleDelete(f.id)}
+                  onClick={() => handleDeleteGH(f)}
                   aria-label={`Delete ${f.name}`}
                   className="p-1.5 rounded text-muted hover:text-danger transition-colors"
                 >
@@ -231,81 +267,36 @@ export default function Vault() {
                 </button>
               </div>
             ))}
+            {filteredGhFiles.length === 0 && (
+              <div className="text-center py-8 text-center">
+                <p className="text-sm text-muted">No files in this category.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Achievement Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-        {filteredAchievements.map((achievement) => (
-          <div key={achievement.id} className="glass-card rounded-lg p-3 hover:border-primary/30 transition-all group">
-            <div className="flex items-start justify-between mb-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                <Award className="w-4 h-4 text-primary" />
-              </div>
-              {achievement.verified && (
-                <span className="flex items-center gap-0.5 text-[9px] text-success bg-success/10 px-1 py-0.5 rounded">
-                  <Shield className="w-2.5 h-2.5" /> ✓
-                </span>
-              )}
+      {ghFiles.length === 0 && (
+        <div className="text-center py-12">
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="w-20 h-20 rounded-full bg-elevated/30 flex items-center justify-center mx-auto mb-4">
+              <Github className="w-8 h-8 text-muted" />
             </div>
-            <h3 className="text-xs font-semibold text-text mb-0.5 line-clamp-2">{achievement.title}</h3>
-            <p className="text-[10px] text-muted mb-2 line-clamp-1">{achievement.issuer}</p>
-            <div className="flex items-center justify-between">
-              <span className="text-[9px] text-muted">{achievement.date}</span>
-              <span className="text-[9px] px-1 py-0.5 rounded bg-elevated text-muted">{achievement.category}</span>
-            </div>
+            <h3 className="text-sm font-medium text-text">No files yet</h3>
+            <p className="text-xs text-muted">Upload your first file to GitHub.</p>
+            <button
+              type="button"
+              onClick={openGhPicker}
+              disabled={!ghConfigured}
+              className={`mt-4 px-4 py-2 rounded-lg text-xs font-medium transition-colors ${
+                ghConfigured ? 'bg-primary text-white hover:bg-primary/90' : 'bg-elevated text-muted hover:bg-elevated/80 opacity-50 cursor-not-allowed'
+              }`}
+            >
+              {ghConfigured ? 'Upload File' : 'Connect GitHub First'}
+            </button>
           </div>
-        ))}
-
-        {/* Upload drop-zone */}
-        <button
-          type="button"
-          onClick={openPicker}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            handleFiles(e.dataTransfer.files);
-          }}
-          className={`rounded-lg border border-dashed p-3 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-colors min-h-[120px] ${
-            dragging ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/40'
-          }`}
-        >
-          <div className="w-8 h-8 rounded bg-elevated/50 flex items-center justify-center">
-            <Upload className="w-4 h-4 text-muted" />
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-text font-medium">{busy ? 'Uploading…' : 'Upload'}</p>
-            <p className="text-[10px] text-muted">PDF, JPG, PNG · drop or click</p>
-          </div>
-        </button>
-      </div>
-
-      {/* File Types */}
-      <div className="mt-6 glass-card rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-text mb-4">File Types</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { icon: FileText, label: 'PDFs', count: counts.pdf, color: 'text-danger' },
-            { icon: Image, label: 'Images', count: counts.images, color: 'text-success' },
-            { icon: FileText, label: 'Documents', count: counts.docs, color: 'text-primary' },
-            { icon: Award, label: 'Certificates', count: counts.certs, color: 'text-warning' },
-          ].map((type) => (
-            <div key={type.label} className="flex items-center gap-3 p-3 rounded-lg bg-elevated/30">
-              <type.icon className={`w-5 h-5 ${type.color}`} />
-              <div>
-                <p className="text-sm font-medium text-text">{type.count}</p>
-                <p className="text-xs text-muted">{type.label}</p>
-              </div>
-            </div>
-          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

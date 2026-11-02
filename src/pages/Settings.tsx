@@ -3,11 +3,11 @@ import {
   Settings as SettingsIcon, Moon, Sun, Bell, Clock, Database, 
   Shield, Download, Upload, HardDrive, Trash2, ChevronRight,
   ToggleLeft, ToggleRight, Cloud, CloudOff, CheckCircle2, ExternalLink,
-  Sparkles
+  Sparkles, Github,
 } from 'lucide-react';
 import { useTheme } from '../lib/theme';
 import { usePersistentState, exportAll, clearAll, usedBytes, formatBytes } from '../lib/storage';
-import { getCredentials, saveCredentials, isSupabaseConfigured } from '../lib/supabase';
+import { getGitHubConfig, saveGitHubConfig, clearGitHubConfig, isGitHubConfigured } from '../lib/githubFiles';
 
 export default function SettingsPage({ onNavigate }: { onNavigate?: (page: string) => void }) {
   const [theme, setTheme] = useTheme();
@@ -16,27 +16,39 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
   const [confirmClear, setConfirmClear] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
 
-  // Supabase cloud connection (stored in this browser; editable any time).
-  const savedCreds = getCredentials();
-  const [sbUrl, setSbUrl] = useState(savedCreds?.url ?? '');
-  const [sbKey, setSbKey] = useState(savedCreds?.anonKey ?? '');
-  const [sbStatus, setSbStatus] = useState<string | null>(null);
-  const connected = isSupabaseConfigured();
+  // GitHub cloud connection (stored in this browser; editable any time).
+  const savedCreds = getGitHubConfig();
+  const [ghToken, setGhToken] = useState(savedCreds?.token ?? '');
+  const [ghOwner, setGhOwner] = useState(savedCreds?.owner ?? '');
+  const [ghRepo, setGhRepo] = useState(savedCreds?.repo ?? '');
+  const [ghBranch, setGhBranch] = useState(savedCreds?.branch ?? 'main');
+  const [ghFolder, setGhFolder] = useState(savedCreds?.folder ?? 'vault');
+  const [ghStatus, setGhStatus] = useState<string | null>(null);
+  const ghConfigured = isGitHubConfigured();
 
-  const handleSaveSupabase = () => {
-    if (!sbUrl.trim() || !sbKey.trim()) {
-      setSbStatus('Enter both the Project URL and the anon key.');
+  const handleSaveGitHub = () => {
+    if (!ghToken.trim() || !ghOwner.trim() || !ghRepo.trim()) {
+      setGhStatus('Enter Project URL, Anon key, and Project name.');
       return;
     }
-    saveCredentials(sbUrl, sbKey);
-    setSbStatus('Connected. Uploads now go to Supabase Storage.');
+    saveGitHubConfig({
+      token: ghToken.trim(),
+      owner: ghOwner.trim(),
+      repo: ghRepo.trim(),
+      branch: ghBranch.trim() || 'main',
+      folder: ghFolder.trim() || 'vault',
+    });
+    setGhStatus('Connected. Uploads now go to GitHub Storage.');
   };
 
-  const handleDisconnectSupabase = () => {
-    saveCredentials('', '');
-    setSbUrl('');
-    setSbKey('');
-    setSbStatus('Disconnected. Uploads will save to this browser only.');
+  const handleDisconnectGitHub = () => {
+    clearGitHubConfig();
+    setGhToken('');
+    setGhOwner('');
+    setGhRepo('');
+    setGhBranch('main');
+    setGhFolder('vault');
+    setGhStatus('Disconnected. Uploads will save to this browser only.');
   };
 
   const downloadJSON = (data: unknown, filename: string) => {
@@ -117,10 +129,8 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
                         ? 'bg-primary text-white'
                         : 'bg-surface text-text'
                       : 'bg-elevated/50 text-muted hover:bg-elevated/80'
-                  }`}
-                >
-                  {t === 'dark' ? 'Dark' : t === 'light' ? 'Light' : 'Claude'}
-                </button>
+                  }`} 
+                >{t === 'dark' ? 'Dark' : t === 'light' ? 'Light' : 'Claude'}</button>
               ))}
             </div>
           </div>
@@ -133,18 +143,8 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
             Regional
           </h2>
           <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow 
-              icon={Clock}
-              label="Week Start"
-              description="First day of the week"
-              value="Monday"
-            />
-            <SettingRow 
-              icon={Clock}
-              label="Date Format"
-              description="How dates are displayed"
-              value="DD/MM/YYYY"
-            />
+            <SettingRow icon={Clock} label="Week Start" description="First day of the week" value="Monday" />
+            <SettingRow icon={Clock} label="Date Format" description="How dates are displayed" value="DD/MM/YYYY" />
           </div>
         </section>
 
@@ -155,25 +155,9 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
             Notifications
           </h2>
           <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow 
-              icon={Bell}
-              label="Push Notifications"
-              description="Receive reminders and alerts"
-              toggle={notifications}
-              onToggle={() => setNotifications(!notifications)}
-            />
-            <SettingRow 
-              icon={Clock}
-              label="Study Reminders"
-              description="Daily study time reminders"
-              value="9:00 AM"
-            />
-            <SettingRow 
-              icon={Bell}
-              label="Revision Alerts"
-              description="Alert before revision due dates"
-              value="1 day before"
-            />
+            <SettingRow icon={Bell} label="Push Notifications" description="Receive reminders and alerts" toggle={notifications} onToggle={() => setNotifications(!notifications)} />
+            <SettingRow icon={Clock} label="Study Reminders" description="Daily study time reminders" value="9:00 AM" />
+            <SettingRow icon={Bell} label="Revision Alerts" description="Alert before revision due dates" value="1 day before" />
           </div>
         </section>
 
@@ -184,96 +168,107 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
             Study Preferences
           </h2>
           <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow 
-              icon={Clock}
-              label="Daily Study Target"
-              description="Your daily study hour goal"
-              value="4 hours"
-            />
-            <SettingRow 
-              icon={Clock}
-              label="Focus Session Duration"
-              description="Default timer duration"
-              value="50 minutes"
-            />
-            <SettingRow 
-              icon={Clock}
-              label="Break Duration"
-              description="Time between focus sessions"
-              value="10 minutes"
-            />
+            <SettingRow icon={Clock} label="Daily Study Target" description="Your daily study hour goal" value="4 hours" />
+            <SettingRow icon={Clock} label="Focus Session Duration" description="Default timer duration" value="50 minutes" />
+            <SettingRow icon={Clock} label="Break Duration" description="Time between focus sessions" value="10 minutes" />
           </div>
         </section>
 
-        {/* Cloud Storage (Supabase) */}
+        {/* Cloud Storage (GitHub) */}
         <section className="mb-8">
           <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
-            {connected ? <Cloud className="w-4 h-4 text-success" /> : <CloudOff className="w-4 h-4 text-primary" />}
-            Cloud Storage
+            {ghConfigured ? <Github className="w-4 h-4 text-success" /> : <CloudOff className="w-4 h-4 text-primary" />}
+            Cloud Storage (GitHub)
           </h2>
           <div className="glass-card rounded-xl p-5">
             <div className={`flex items-center gap-2 mb-4 px-3 py-2 rounded-lg text-xs ${
-              connected ? 'bg-success/10 text-success border border-success/20' : 'bg-elevated/50 text-muted'
+              ghConfigured ? 'bg-success/10 text-success border border-success/20' : 'bg-elevated/50 text-muted'
             }`}>
-              {connected ? <CheckCircle2 className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
-              {connected
-                ? 'Connected to Supabase — PDFs and images upload to the cloud.'
-                : 'Not connected. Uploads stay in this browser (max 1.5 MB). Connect Supabase to store files in the cloud — free tier.'}
+              {ghConfigured ? <CheckCircle2 className="w-4 h-4" /> : <CloudOff className="w-4 h-4" />}
+              {ghConfigured
+                ? 'Connected to GitHub — uploads are stored in your GitHub repo.'
+                : 'Not connected. Uploads stay in this browser only (max 1.5 MB). Connect GitHub to store files in your repo.'}
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Project URL</label>
-                <input
-                  type="text"
-                  placeholder="https://your-project.supabase.co"
-                  value={sbUrl}
-                  onChange={(e) => setSbUrl(e.target.value)}
-                  className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Anon / Public Key</label>
+                <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Personal Access Token</label>
                 <input
                   type="password"
-                  placeholder="eyJhbGciOi..."
-                  value={sbKey}
-                  onChange={(e) => setSbKey(e.target.value)}
+                  placeholder="ghp_..."
+                  value={ghToken}
+                  onChange={(e) => setGhToken(e.target.value)}
                   className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text placeholder:text-muted/50 focus:outline-none focus:border-primary"
                 />
+                <p className="text-[11px] text-muted mt-1">Create at github.com/settings/tokens with repo scope.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Owner</label>
+                  <input
+                    type="text"
+                    placeholder="jiteshoffice1234-star"
+                    value={ghOwner}
+                    onChange={(e) => setGhOwner(e.target.value)}
+                    className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Repository</label>
+                  <input
+                    type="text"
+                    placeholder="LEARNING-OS"
+                    value={ghRepo}
+                    onChange={(e) => setGhRepo(e.target.value)}
+                    className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Branch</label>
+                  <input
+                    type="text"
+                    placeholder="main"
+                    value={ghBranch}
+                    onChange={(e) => setGhBranch(e.target.value)}
+                    className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted uppercase tracking-wider mb-1.5 block">Folder</label>
+                  <input
+                    type="text"
+                    placeholder="vault"
+                    value={ghFolder}
+                    onChange={(e) => setGhFolder(e.target.value)}
+                    className="w-full bg-elevated border border-border rounded-lg px-3 py-2.5 text-sm text-text focus:outline-none focus:border-primary"
+                  />
+                </div>
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
                 <button
-                  onClick={handleSaveSupabase}
+                  onClick={handleSaveGitHub}
                   className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
                 >
-                  {connected ? 'Update Connection' : 'Connect Supabase'}
+                  {ghConfigured ? 'Update Connection' : 'Connect GitHub'}
                 </button>
-                {connected && (
+                {ghConfigured && (
                   <button
-                    onClick={handleDisconnectSupabase}
+                    onClick={handleDisconnectGitHub}
                     className="px-4 py-2 rounded-lg bg-elevated text-text text-sm font-medium hover:bg-elevated/80 transition-colors"
                   >
                     Disconnect
                   </button>
                 )}
-                <a
-                  href="https://supabase.com/dashboard/project/_/settings/api"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-xs text-primary hover:text-accent transition-colors"
-                >
-                  Find these in the Supabase dashboard <ExternalLink className="w-3 h-3" />
-                </a>
               </div>
 
-              {sbStatus && <p className="text-xs text-primary">{sbStatus}</p>}
+              {ghStatus && <p className="text-xs text-primary">{ghStatus}</p>}
 
               <p className="text-[11px] text-muted leading-relaxed">
-                One-time setup in Supabase: open <span className="text-text">Storage</span> and create a
-                <span className="text-text"> public bucket named “vault”</span>. Then uploads (PDF, JPG, PNG) work automatically.
-                Keys are stored only in this browser and are included in your backups.
+                Uploaded files are stored in your GitHub repo at <span className="text-text">/{ghFolder}</span>. 
+                Anyone with repo access can view them. Files are public by default on public repos.
               </p>
             </div>
           </div>
@@ -286,116 +281,62 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
             Data Management
           </h2>
           <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow 
-              icon={HardDrive}
-              label="Storage Used"
-              description="Local data in this browser"
-              value={formatBytes(usedBytes())}
-            />
-            <button type="button" 
-              onClick={handleBackup}
-              className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left"
-            >
-              <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center">
-                <Download className="w-4 h-4 text-success" />
-              </div>
+            <SettingRow icon={HardDrive} label="Storage Used" description="Local data in this browser" value={formatBytes(usedBytes())} />
+            <button onClick={handleBackup} className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left">
+              <div className="w-8 h-8 rounded-lg bg-success/15 flex items-center justify-center"><Download className="w-4 h-4 text-success" /></div>
               <div className="flex-1">
                 <p className="text-sm text-text">Backup Data</p>
                 <p className="text-xs text-muted">Download all data as a JSON file</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
             </button>
-            <button type="button" 
-              onClick={() => onNavigate?.('backup')}
-              className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left"
-            >
-              <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
-                <Upload className="w-4 h-4 text-primary" />
-              </div>
+            <button onClick={() => onNavigate?.('backup')} className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left">
+              <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center"><Upload className="w-4 h-4 text-primary" /></div>
               <div className="flex-1">
                 <p className="text-sm text-text">Restore Data</p>
                 <p className="text-xs text-muted">Import from a backup file</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
             </button>
-            <button type="button" 
-              onClick={handleClearAll}
-              className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left"
-            >
-              <div className="w-8 h-8 rounded-lg bg-danger/15 flex items-center justify-center">
-                <Trash2 className="w-4 h-4 text-danger" />
-              </div>
+            <button onClick={handleClearAll} className="w-full flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors text-left">
+              <div className="w-8 h-8 rounded-lg bg-danger/15 flex items-center justify-center"><Trash2 className="w-4 h-4 text-danger" /></div>
               <div className="flex-1">
                 <p className="text-sm text-text">{confirmClear ? 'Confirm: Delete Everything' : 'Delete All Data'}</p>
                 <p className="text-xs text-muted">{confirmClear ? 'Click again to permanently erase' : 'Erase all data stored in this browser'}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted" />
             </button>
-            {status && (
-              <div className="p-4">
-                <p className="text-xs text-primary">{status}</p>
-              </div>
-            )}
+            {status && (<div className="p-4"><p className="text-xs text-primary">{status}</p></div>)}
           </div>
         </section>
 
         {/* Security */}
         <section className="mb-8">
           <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-primary" />
-            Security
+            <Shield className="w-4 h-4 text-primary" /> Security
           </h2>
           <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow 
-              icon={Shield}
-              label="Offline Storage"
-              description="All data stays on this device — no cloud sync"
-              value="Always on"
-            />
-            <SettingRow 
-              icon={Shield}
-              label="No Tracking"
-              description="The app collects no analytics or personal data"
-              value="Always on"
-            />
-            <SettingRow 
-              icon={Shield}
-              label="Biometric Lock"
-              description="Use fingerprint or face ID"
-              value="Not available"
-            />
+            <SettingRow icon={Shield} label="Offline Storage" description="All data stays on this device — no cloud sync" value="Always on" />
+            <SettingRow icon={Shield} label="No Tracking" description="The app collects no analytics or personal data" value="Always on" />
+            <SettingRow icon={Shield} label="Biometric Lock" description="Use fingerprint or face ID" value="Not available" />
           </div>
         </section>
 
         {/* Auto Backup */}
         <section className="mb-8">
           <h2 className="text-sm font-semibold text-text uppercase tracking-wider mb-4 flex items-center gap-2">
-            <Database className="w-4 h-4 text-primary" />
-            Backup
+            <Database className="w-4 h-4 text-primary" /> Backup
           </h2>
           <div className="glass-card rounded-xl divide-y divide-border/50">
-            <SettingRow 
-              icon={Database}
-              label="Auto Backup"
-              description="Remind me to back up regularly"
-              toggle={autoBackup}
-              onToggle={() => setAutoBackup(!autoBackup)}
-            />
-            <SettingRow 
-              icon={HardDrive}
-              label="Backup Location"
-              description="Where backups are saved"
-              value="Your device (download)"
-            />
+            <SettingRow icon={Database} label="Auto Backup" description="Remind me to back up regularly" toggle={autoBackup} onToggle={() => setAutoBackup(!autoBackup)} />
+            <SettingRow icon={HardDrive} label="Backup Location" description="Where backups are saved" value="Your device (download)" />
           </div>
         </section>
 
         {/* About */}
         <section className="mb-8">
           <div className="glass-card rounded-xl p-5 text-center">
-            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mx-auto mb-3">
-              <SettingsIcon className="w-6 h-6 text-primary" />
-            </div>
+            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center mx-auto mb-3"><SettingsIcon className="w-6 h-6 text-primary" /></div>
             <h3 className="text-sm font-bold gradient-text">LEARNING OS</h3>
             <p className="text-xs text-muted mt-1">Version 1.0.0</p>
             <p className="text-xs text-muted mt-3">Your device is the home of your learning data.</p>
@@ -407,38 +348,20 @@ export default function SettingsPage({ onNavigate }: { onNavigate?: (page: strin
   );
 }
 
-interface SettingRowProps {
-  icon: React.ElementType;
-  label: string;
-  description: string;
-  toggle?: boolean;
-  onToggle?: () => void;
-  value?: string;
-}
+interface SettingRowProps { icon: React.ElementType; label: string; description: string; toggle?: boolean; onToggle?: () => void; value?: string; }
 
 function SettingRow({ icon: Icon, label, description, toggle, onToggle, value }: SettingRowProps) {
   return (
     <div className="flex items-center gap-3 p-4 hover:bg-elevated/30 transition-colors">
-      <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0">
-        <Icon className="w-4 h-4 text-primary" />
-      </div>
+      <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center flex-shrink-0"><Icon className="w-4 h-4 text-primary" /></div>
       <div className="flex-1 min-w-0">
         <p className="text-sm text-text">{label}</p>
         <p className="text-xs text-muted">{description}</p>
       </div>
       {toggle !== undefined ? (
-        <button type="button" onClick={onToggle} className="flex-shrink-0">
-          {toggle ? (
-            <ToggleRight className="w-8 h-8 text-primary" />
-          ) : (
-            <ToggleLeft className="w-8 h-8 text-muted" />
-          )}
-        </button>
+        <button type="button" onClick={onToggle} className="flex-shrink-0">{toggle ? <ToggleRight className="w-8 h-8 text-primary" /> : <ToggleLeft className="w-8 h-8 text-muted" />}</button>
       ) : (
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <span className="text-sm text-muted">{value}</span>
-          <ChevronRight className="w-4 h-4 text-muted" />
-        </div>
+        <div className="flex items-center gap-1 flex-shrink-0"><span className="text-sm text-muted">{value}</span><ChevronRight className="w-4 h-4 text-muted" /></div>
       )}
     </div>
   );
