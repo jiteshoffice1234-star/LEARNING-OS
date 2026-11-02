@@ -6,7 +6,7 @@
 
 Your device is the home of your learning data. No cloud required, no accounts needed.
 
-![LEARNING OS - App Icon](public/icon.svg)
+![LEARNING OS - App Icon](public/icon.svg){width=250 height=250}
 
 ---
 
