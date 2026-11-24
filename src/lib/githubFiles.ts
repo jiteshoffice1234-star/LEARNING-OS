@@ -24,12 +24,12 @@ export interface GitHubFile {
 const GH_CONFIG_KEY = 'learningos:v1:githubConfig:v2';
 const GITHUB_API = 'https://api.github.com';
 
-// Built-in connection for the owner's repo. The token is split so it is not a
-// single literal in source; the app still needs it in the browser to talk to
-// GitHub directly. Replace these values if the repo or token changes.
-const DEFAULT_TOKEN = ['ghp_ieWMuKVLcXzHs5', 'HduWHA4zkaiCkdIB4', 'CZr4l'].join('');
+// No token is shipped with the app. A previous build embedded a default
+// personal access token here (split across string parts); it has been revoked
+// and removed. Connect your own token in Settings > Cloud Storage instead -
+// it is saved only in this browser.
 const DEFAULT_CONFIG: GitHubConfig = {
-  token: DEFAULT_TOKEN,
+  token: '',
   owner: 'jiteshoffice1234-star',
   repo: 'LEARNING-OS',
   branch: 'main',
