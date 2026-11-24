@@ -76,7 +76,7 @@ LEARNING OS is a comprehensive personal learning management application designed
 
 ### Android
 
-Download the latest APK from the [Releases page](https://github.com/YOUR_USERNAME/learning-os/releases/latest).
+Download the latest APK from the [Releases page](https://github.com/jiteshoffice1234-star/LEARNING-OS/releases/latest).
 
 **Installation:**
 1. Download `learning-os-v1.0.0.apk`
@@ -167,7 +167,7 @@ learning-os/
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/learning-os.git
+git clone https://github.com/jiteshoffice1234-star/LEARNING-OS.git
 cd learning-os
 
 # Install dependencies
@@ -275,7 +275,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 
 ```bash
 # Fork and clone
-git clone https://github.com/YOUR_USERNAME/learning-os.git
+git clone https://github.com/jiteshoffice1234-star/LEARNING-OS.git
 cd learning-os
 
 # Install dependencies
@@ -312,9 +312,9 @@ If you're interested in using this project under an open-source license, please 
 ## Support
 
 - 📖 **Documentation**: See the `docs/` folder
-- 🐛 **Bug Reports**: [Open an issue](https://github.com/YOUR_USERNAME/learning-os/issues)
-- 💡 **Feature Requests**: [Open an issue](https://github.com/YOUR_USERNAME/learning-os/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/YOUR_USERNAME/learning-os/discussions)
+- 🐛 **Bug Reports**: [Open an issue](https://github.com/jiteshoffice1234-star/LEARNING-OS/issues)
+- 💡 **Feature Requests**: [Open an issue](https://github.com/jiteshoffice1234-star/LEARNING-OS/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/jiteshoffice1234-star/LEARNING-OS/discussions)
 
 ---
 
@@ -335,9 +335,9 @@ If you're interested in using this project under an open-source license, please 
 ## Links
 
 - 🌐 **Website**: [Coming Soon]
-- 📱 **Android APK**: [Latest Release](https://github.com/YOUR_USERNAME/learning-os/releases/latest)
+- 📱 **Android APK**: [Latest Release](https://github.com/jiteshoffice1234-star/LEARNING-OS/releases/latest)
 - 📚 **Documentation**: [docs/](docs/)
-- 🐛 **Issues**: [GitHub Issues](https://github.com/YOUR_USERNAME/learning-os/issues)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/jiteshoffice1234-star/LEARNING-OS/issues)
 
 ---
 
